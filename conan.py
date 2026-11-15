@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""CONAN FRAMEWORK v5.1 — ULTIMATE CYBER INVESTIGATION SYSTEM (المحقق كونان).
+"""CONAN FRAMEWORK v5.2 — ULTIMATE CYBER INVESTIGATION SYSTEM (المحقق كونان).
 
 Launcher. The real code lives in the `conan/` package (same directory).
 This file only loads the package explicitly (the file and the package share
@@ -41,7 +41,7 @@ def _main():
         return menu_main()
     if argv[0] in ("menu", "--menu"):
         from conan.menu_app import main as menu_main
-        return menu_main(argv[1:])
+        return menu_main(argv[1:], start_menu=True)
     if argv[0] == "shell":
         from conan.cli import main as cli_main
         return cli_main(argv[1:])

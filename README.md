@@ -1,4 +1,4 @@
-# CONAN FRAMEWORK v5.1 — ULTIMATE CYBER INVESTIGATION SYSTEM 🔍
+# CONAN FRAMEWORK v5.2 — ULTIMATE CYBER INVESTIGATION SYSTEM 🔍
 
 **CONAN DETECTIVE** — منصة تحقيق سيبراني معيارية متعددة اللغات.
 
@@ -6,19 +6,30 @@ Developer: **Hafed Mehdi Salah Eddine** — Algeria 🇩🇿
 GitHub: **M-salah1** — Copyright © 2026
 
 - Python standard library only — no required dependencies
-- 20-option interactive menu • wizard-driven investigations • 3 languages (العربية / Français / English, RTL)
-- v5.1 Ethical Defender Edition: safe lab, victim protection, defense center, animated reports
+- **MEGA SCAN by default**: enter a URL once, every module runs together, one detailed report (identity, domain history, admin contact, country, servers, paths, deep tests)
+- 20-option interactive menu (still there: press 0 at the URL prompt, or `python3 conan.py menu`) • 3 languages (العربية / Français / English, RTL)
+- v5.2 Ethical Defender Edition: safe lab, victim protection, defense center, animated reports
 - Works on Android Termux, Linux and Windows PowerShell
 
 ## Start
 
 ```bash
-python3 conan.py                        # menu: welcome + language + 20 options
+python3 conan.py                        # MEGA SCAN: welcome + language + URL → everything together
+python3 conan.py menu                   # classic 20-option menu
 python3 conan.py shell                  # interactive shell: conan >
 python3 conan.py https://example.com    # direct full scan
 python3 conan.py https://example.com --json
 python3 conan.py --version
 ```
+
+## Mega Scan — what the detailed report contains
+
+1. **Identity & location** — domain, country (geo estimate), city/region, hosting org
+2. **Domain history** — registration / expiry / registrar / registrant org from public WHOIS, earliest certificate from the public CT log, logged hostnames. Previous names and rename dates are WHOIS history (paid service) — shown as UNKNOWN with the reason, never invented
+3. **Admin contact** — only what the site itself publishes (security.txt contacts, public WHOIS org); redacted or undisclosed = UNKNOWN
+4. **Servers** — web-server header, IPs, nameservers, MX, TLS issuer, allowed HTTP methods, redirect chain
+5. **Paths** — bounded deep-path probe (authorized targets only) + discovered pages
+6. **Deep tests** — health, DNS/DNSSEC, TLS, headers, cookies, forms, API, discovery, exposure, phishing, vulnerability indicators, core score/grade — with findings, evidence and fixes
 
 ## Main menu
 
@@ -68,7 +79,7 @@ Conan never attacks an attacker's machine, never launches DDoS, never
 guesses passwords, never bypasses logins, and never shows password or
 session-cookie values.
 
-## v5.1 Design release — animated interface, one-line loader, readable Arabic
+## v5.2 Design release — animated interface, one-line loader, readable Arabic
 
 - **Animated design:** a magnifying-glass sweep intro on startup, a
   coloured numbered menu (orange numbers, green protection-mode line),

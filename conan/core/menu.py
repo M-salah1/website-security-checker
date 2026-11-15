@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Main menu + smart investigation wizard for CONAN FRAMEWORK v5.1.
+"""Main menu + smart investigation wizard for CONAN FRAMEWORK v5.2.
 
-Welcome screen -> language selection (remembered) -> 20-option menu.
-The wizard asks for URL/IP, validates it, checks scope/authorization, asks
-only essential extra questions, runs the modules and shows organized
-results. Navigation commands BACK / HOME / MENU / CANCEL / EXIT work at
-every prompt; BACK preserves completed results (they live in the case
-store and the session store, not on the screen).
+Welcome screen -> language selection (remembered) -> MEGA SCAN by
+default: enter a URL once and every module runs together, then a
+detailed report. The classic 20-option menu is still there — press 0
+at the URL prompt, choose it after a scan, or start with
+`python3 conan.py menu`. Navigation commands BACK / HOME / MENU /
+CANCEL / EXIT work at every prompt; BACK preserves completed results
+(they live in the case store and the session store, not on the screen).
 """
 import ipaddress
 import os
@@ -34,6 +35,7 @@ from ..scanners import headers as headers_mod
 from ..scanners import health as health_mod
 from ..scanners import ip_intelligence as ip_mod
 from ..scanners import malware as malware_mod
+from ..scanners import mega as mega_mod
 from ..scanners import paths as paths_mod
 from ..scanners import phishing as phishing_mod
 from ..scanners import registration as reg_mod
@@ -264,6 +266,121 @@ class MenuApp:
             self.out(self.t("export_done") + ": conan-report-animated.html")
 
     # -- menu options ------------------------------------------------------
+    def opt_mega_scan(self, url=None):
+        """The big scan: one URL, every module together, one detailed report."""
+        self.nav.push("mega-scan")
+        if url is None:
+            url = self.ask_url()
+        inv = self._anim(total=len(mega_mod.DEEP_TESTS))
+        inv.start()
+        try:
+            scan = mega_mod.mega_scan(
+                url, scope=self.scope, settings=self.settings,
+                progress=lambda name: inv.phase(name))
+        finally:
+            inv.done()
+        rec = self.finish_case("mega-scan", url, mega_mod.DEEP_TESTS,
+                               "authorized" if self.scope.is_authorized(url) else "passive",
+                               scan)
+        self.print_mega_report(rec)
+        self.show_dashboard(rec)
+
+    def print_mega_report(self, rec):
+        """Detailed report: identity, history, admin, country, servers,
+        paths, deep tests, findings and fixes — public data only."""
+        scan = rec["scan"]
+        hist = scan.get("history") or {}
+        servers = scan.get("servers") or {}
+        print(terminal.rule())
+        print(terminal.orange("🔍 %s" % self.disp(self.t("detailed_report"))))
+        self.out("%s: %s" % (self.disp(self.t("target")), scan.get("target")))
+        self.out("%s: %s%%   %s: %s   %s: %s%%   %s: %s s" % (
+            self.t("score"), scan.get("score"), self.t("grade"), scan.get("grade"),
+            self.t("confidence"), scan.get("confidence"), self.t("duration"),
+            scan.get("duration_s")))
+        # 1. Identity & country
+        print(terminal.rule())
+        self.out("1. %s" % self.disp(self.t("identity")))
+        self.out("   %s: %s" % (self.disp(self.t("domain")), hist.get("domain")))
+        self.out("   %s: %s" % (self.disp(self.t("country")),
+                               hist.get("country") or "UNKNOWN"))
+        if hist.get("city") or hist.get("region"):
+            self.out("   %s: %s" % (self.disp(self.t("city")),
+                                   ", ".join(x for x in (hist.get("city"), hist.get("region")) if x)))
+        self.out("   %s: %s" % (self.disp(self.t("hosted_by")),
+                               hist.get("hosting_org") or "UNKNOWN"))
+        # 2. Domain history
+        print(terminal.rule())
+        self.out("2. %s" % self.disp(self.t("domain_history")))
+        self.out("   %s: %s" % (self.disp(self.t("created")), hist.get("created") or "UNKNOWN"))
+        self.out("   %s: %s" % (self.disp(self.t("expires")), hist.get("expires") or "UNKNOWN"))
+        self.out("   %s: %s" % (self.disp(self.t("registrar")), hist.get("registrar") or "UNKNOWN"))
+        self.out("   %s: %s" % (self.disp(self.t("registrant_org")),
+                               hist.get("registrant_org") or "UNKNOWN"))
+        self.out("   %s: %s" % (self.disp(self.t("earliest_certificate")),
+                               hist.get("earliest_certificate") or "UNKNOWN"))
+        self.out("   %s: %s (%s: %d)" % (self.disp(self.t("previous_names")),
+                                        hist.get("previous_names") or "UNKNOWN",
+                                        self.disp(self.t("ct_certificates")),
+                                        hist.get("ct_certificates") or 0))
+        self.out("   %s" % self.disp(self.t("history_note")))
+        # 3. Admin contact (published only)
+        print(terminal.rule())
+        self.out("3. %s" % self.disp(self.t("admin_contact")))
+        self.out("   %s" % self.disp(hist.get("admin_contact") or "UNKNOWN"))
+        self.out("   %s: %s" % (self.disp(self.t("source")),
+                               self.disp(hist.get("admin_contact_source") or "")))
+        # 4. Servers
+        print(terminal.rule())
+        self.out("4. %s" % self.disp(self.t("servers")))
+        self.out("   %s: %s" % (self.disp(self.t("server_header")),
+                               servers.get("server_header") or "UNKNOWN"))
+        self.out("   IP: %s" % ", ".join(servers.get("ips") or ["UNKNOWN"]))
+        self.out("   NS: %s" % ", ".join(servers.get("nameservers") or ["UNKNOWN"]))
+        self.out("   MX: %s" % ", ".join(servers.get("mx") or ["UNKNOWN"]))
+        self.out("   %s: %s" % (self.disp(self.t("tls_issuer")),
+                               servers.get("tls_issuer") or "UNKNOWN"))
+        methods = scan.get("methods") or {}
+        self.out("   %s: %s" % (self.disp(self.t("http_methods")),
+                               ", ".join(methods.get("methods") or ["UNKNOWN"])))
+        redirs = scan.get("redirects") or {}
+        chain = redirs.get("chain") or []
+        self.out("   %s: %s" % (self.disp(self.t("redirect_chain")),
+                               (" -> ".join("%d %s" % (c, u) for c, u in chain)
+                                if chain else self.disp(self.t("none")))))
+        # 5. Paths
+        print(terminal.rule())
+        self.out("5. %s" % self.disp(self.t("paths")))
+        deep = scan.get("deep_paths") or []
+        if isinstance(deep, list):
+            public = [d for d in deep if d.get("category") == "PUBLIC"]
+            auth = [d for d in deep if d.get("category") == "AUTHENTICATION REQUIRED"]
+            self.out("   %s: %d  |  %s: %d  |  %s: %d" % (
+                self.disp(self.t("public")), len(public),
+                self.disp(self.t("auth_required")), len(auth),
+                self.disp(self.t("probed")), len(deep)))
+            for d in public[:10]:
+                print("     [200] %s" % d["path"])
+        else:
+            self.out("   %s" % self.disp(self.t("deep_paths_note")))
+        disc = scan.get("discovery") or {}
+        self.out("   %s: %s" % (self.disp(self.t("discovered_pages")),
+                               len(disc.get("pages", []) or [])))
+        # 6. Deep tests + findings
+        print(terminal.rule())
+        self.out("6. %s" % self.disp(self.t("deep_tests")))
+        self.out("   %s" % ", ".join(scan.get("deep_tests") or []))
+        findings = scan.get("findings") or []
+        dist = scan.get("severity_distribution") or {}
+        self.out("%s: %s" % (self.disp(self.t("findings")),
+                            ", ".join("%s=%d" % (k, v) for k, v in dist.items() if v)))
+        for f in findings[:10]:
+            print("  [%s/%s] %s" % (f["severity"].upper(), f["status"],
+                                    self.disp(f["name"])))
+        for fix in (scan.get("recommendations") or [])[:5]:
+            self.out("   • %s" % self.disp(fix))
+        print(terminal.rule())
+
     def opt_website_investigation(self):
         self.nav.push("website")
         url = self.ask_url()
@@ -311,7 +428,7 @@ class MenuApp:
             findings += vuln_mod.test_file_upload(forms.get("forms", []), url)
         finally:
             inv.done()
-        scan = {"tool": "CONAN FRAMEWORK v5.1", "target": url,
+        scan = {"tool": "CONAN FRAMEWORK v5.2", "target": url,
                 "kind": "vulnerability-audit",
                 "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -729,10 +846,60 @@ class MenuApp:
                 set_reverse_arabic(self.settings["reverse_arabic"])
 
     # -- main loop -----------------------------------------------------------
-    def run(self):
+    def run(self, start_menu=False):
         self.nav.push("home")
         self.welcome()
         self.language_screen()
+        if start_menu:
+            return self.classic_menu_loop()
+        # Default: the big scan first — enter a URL once, everything runs
+        # together, then the detailed report. 0 at the URL prompt opens
+        # the classic menu instead.
+        while True:
+            try:
+                url = self.ask_url()
+            except NavCommand as nav:
+                if nav.command == "EXIT":
+                    break
+                return self.classic_menu_loop()
+            try:
+                self.opt_mega_scan(url)
+            except NavCommand as nav:
+                if nav.command == "EXIT":
+                    break
+                self.nav.home()
+                continue
+            except KeyboardInterrupt:
+                self.out(self.t("cancelled"))
+                continue
+            except ScopeError as exc:
+                print(str(exc))
+                self.out(self.t("not_authorized"))
+                self.pause()
+                continue
+            except Exception as exc:
+                print("Error: %s" % exc)
+                self.pause()
+                continue
+            # After the report: 1 = another scan, 2 = classic menu, 0 = exit.
+            self.out("1. %s    2. %s    0. %s" % (
+                self.disp(self.t("scan_another")), self.disp(self.t("main_menu")),
+                self.disp(self.t("back"))))
+            try:
+                choice = self.ask(self.t("enter_choice"))
+            except NavCommand as nav:
+                if nav.command == "EXIT":
+                    break
+                return self.classic_menu_loop()
+            if choice == "1":
+                continue
+            if choice == "2":
+                return self.classic_menu_loop()
+            break
+        self.out(self.t("goodbye"))
+        return 0
+
+    def classic_menu_loop(self):
         while True:
             self.main_menu()
             try:

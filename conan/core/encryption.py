@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Multi-layer encryption for CONAN FRAMEWORK v5.1.
+"""Multi-layer encryption for CONAN FRAMEWORK v5.2.
 
 - AES-256-GCM for sensitive local data (pure-Python implementation, verified
   against the FIPS-197 and NIST GCM test vectors; the `cryptography` library
