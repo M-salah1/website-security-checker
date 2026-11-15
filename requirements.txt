@@ -1,0 +1,8 @@
+# CONAN FRAMEWORK v3.0 — requirements
+# No required dependencies: Python 3.8+ standard library only.
+# Works out of the box on Android Termux, Linux and Windows.
+#
+# Optional (all have stdlib fallbacks, install only if you want them):
+# cryptography  # faster AES-256-GCM (pure-Python fallback is built in)
+# argon2-cffi   # Argon2id key derivation (scrypt fallback is built in)
+# rich          # richer terminal rendering (ANSI fallback is built in)
