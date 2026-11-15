@@ -22,7 +22,7 @@ def build_json_report(scan):
     confirmed = [f for f in findings if f.get("status") == "confirmed"]
     suspected = [f for f in findings if f.get("status") == "suspected"]
     return {
-        "tool": "CONAN FRAMEWORK v5.5 — ULTIMATE CYBER INVESTIGATION SYSTEM",
+        "tool": "CONAN FRAMEWORK v5.6 — ULTIMATE CYBER INVESTIGATION SYSTEM",
         "case_id": scan.get("case_id"),
         "developer": "Hafed Mehdi Salah Eddine — Algeria 🇩🇿",
         "github": "M-salah1",

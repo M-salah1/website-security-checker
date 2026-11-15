@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Settings for CONAN FRAMEWORK v5.5 — plain JSON, no secrets inside.
+"""Settings for CONAN FRAMEWORK v5.6 — plain JSON, no secrets inside.
 
 Secrets (test credentials) are NEVER stored here; they live only in the
 encrypted scope file managed by conan.core.scope.

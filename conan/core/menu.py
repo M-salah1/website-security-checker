@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Main menu + smart investigation wizard for CONAN FRAMEWORK v5.5.
+"""Main menu + smart investigation wizard for CONAN FRAMEWORK v5.6.
 
 Welcome screen (full page: tool, developer, how-to) -> language
 selection -> command console (`conan >`): scan <url>, help, menu,
@@ -51,6 +51,7 @@ from ..defense import hardening
 from ..defense import victim_support
 from ..laboratory import safe_lab
 from ..laboratory import simulator as lab_mod
+from ..reporting import telegram as telegram_mod
 from ..reporting.animated_report import save_animated_html_report
 from ..reporting.html_report import save_html_report
 from ..reporting.json_report import save_json_report
@@ -311,8 +312,9 @@ class MenuApp:
             print("  [%s/%s] %s" % (f["severity"].upper(), f["status"],
                                     self.disp(f["name"])))
         print(terminal.rule())
-        self.out("0. %s    1. %s    2. JSON    3. HTML    4. %s" % (
-            self.t("back"), self.t("findings"), self.t("animated_report")))
+        self.out("0. %s    1. %s    2. JSON    3. HTML    4. %s    5. %s" % (
+            self.t("back"), self.t("findings"), self.t("animated_report"),
+            self.t("telegram")))
         try:
             choice = self.ask(self.t("enter_choice"))
         except NavCommand:
@@ -333,6 +335,48 @@ class MenuApp:
         elif choice == "4":
             save_animated_html_report(scan, "conan-report-animated.html")
             self.out(self.t("export_done") + ": conan-report-animated.html")
+        elif choice == "5":
+            self.opt_send_telegram(rec)
+
+    def opt_send_telegram(self, rec):
+        """Optional Telegram delivery of the full report.
+
+        Asks for the user's own chat ID and bot token. The token is
+        typed hidden, sent only to Telegram's official API, and never
+        stored, saved or printed anywhere.
+        """
+        scan = rec["scan"]
+        self.out(self.t("telegram_intro"))
+        try:
+            chat_id = self.ask(self.t("telegram_chat_id"))
+        except NavCommand:
+            return
+        if not (chat_id or "").strip():
+            return
+        token = self._ask_token()
+        if not token:
+            return
+        self.out(self.t("telegram_sending"))
+        text = telegram_mod.build_telegram_report(scan, self.i18n.lang)
+        sent, error = telegram_mod.send_telegram(token, chat_id, text)
+        if error:
+            self.out("%s: %s" % (self.t("telegram_failed"), error))
+        else:
+            self.out("%s (%d)" % (self.t("telegram_sent"), sent))
+
+    def _ask_token(self):
+        """Read the bot token hidden (getpass); never echo or store it."""
+        import getpass
+        try:
+            token = getpass.getpass(self.t("telegram_token") + " ")
+            return (token or "").strip()
+        except (EOFError, KeyboardInterrupt):
+            return ""
+        except Exception:
+            try:
+                return self.ask(self.t("telegram_token")).strip()
+            except NavCommand:
+                return ""
 
     # -- menu options ------------------------------------------------------
     def opt_mega_scan(self, url=None):
@@ -553,7 +597,7 @@ class MenuApp:
             findings += vuln_mod.test_file_upload(forms.get("forms", []), url)
         finally:
             inv.done()
-        scan = {"tool": "CONAN FRAMEWORK v5.5", "target": url,
+        scan = {"tool": "CONAN FRAMEWORK v5.6", "target": url,
                 "kind": "vulnerability-audit",
                 "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

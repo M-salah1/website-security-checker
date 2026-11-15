@@ -98,7 +98,7 @@ def mega_scan(url, scope=None, settings=None, timeout=15, progress=None):
     scan = website_mod.investigate_website(
         url, scope=scope, max_pages=max_pages, timeout=timeout, progress=tick)
     scan["kind"] = "mega-scan"
-    scan["tool"] = "CONAN FRAMEWORK v5.5"
+    scan["tool"] = "CONAN FRAMEWORK v5.6"
     scan["deep_tests"] = list(DEEP_TESTS)
     scan["scope"] = {"kind": "authorized" if authorized else "passive",
                      "authorized": authorized}

@@ -1,4 +1,4 @@
-# CONAN FRAMEWORK v5.5 — ULTIMATE CYBER INVESTIGATION SYSTEM 🔍
+# CONAN FRAMEWORK v5.6 — ULTIMATE CYBER INVESTIGATION SYSTEM 🔍
 
 **CONAN DETECTIVE** — منصة تحقيق سيبراني معيارية متعددة اللغات.
 
@@ -9,7 +9,7 @@ GitHub: **M-salah1** — Copyright © 2026
 - **Command console**: full welcome page on entry, then a `conan >` prompt — `scan <url>`, `help`, `menu`, `about`, `lang`, `version`, `clear`, `exit`
 - **MEGA SCAN**: `scan <url>` runs every module together, one detailed report (identity, domain history, admin contact, country, servers, paths, deep tests)
 - 20-option interactive menu (via `menu`, or `python3 conan.py menu`) • 3 languages (العربية / Français / English, RTL)
-- v5.5 Ethical Defender Edition: safe lab, victim protection, defense center, animated reports
+- v5.6 Ethical Defender Edition: safe lab, victim protection, defense center, animated reports
 - Works on Android Termux, Linux and Windows PowerShell
 
 ## Start
@@ -106,7 +106,7 @@ Conan never attacks an attacker's machine, never launches DDoS, never
 guesses passwords, never bypasses logins, and never shows password or
 session-cookie values.
 
-## v5.5 Design release — animated interface, one-line loader, readable Arabic
+## v5.1 Design release — animated interface, one-line loader, readable Arabic
 
 - **Animated design:** a magnifying-glass sweep intro on startup, a
   coloured numbered menu (orange numbers, green protection-mode line),
@@ -120,6 +120,26 @@ session-cookie values.
   default, so the terminal flips it back to readable Arabic. Latin
   text, digits and URLs are untouched. Toggle it in Settings (menu 16,
   option 6) or in `conan-settings.json` (`"reverse_arabic": false`).
+
+## Telegram delivery (v5.6) — optional
+
+After a scan, the dashboard offers **5. Telegram**: the tool sends the
+full private report to your own Telegram account.
+
+1. On Telegram, create a bot with [@BotFather](https://t.me/BotFather)
+   and copy its token. Start a chat with your bot.
+2. Find your own account ID (Chat ID) with
+   [@userinfobot](https://t.me/userinfobot).
+3. In Conan, after a scan choose **5**, enter your Chat ID, then type
+   the bot token — it is typed hidden, sent only to Telegram's official
+   API (`api.telegram.org`), and **never saved, stored or printed**
+   anywhere. The message contains the tool name, the developer, a short
+   intro, the target site, the score/grade, the findings and the
+   detailed sections; long reports are split into several messages
+   (Telegram's 4096-character limit).
+
+If the token or the ID is wrong, Conan prints the Telegram error and
+nothing is sent.
 
 ## Scope and authorization — read this first
 
