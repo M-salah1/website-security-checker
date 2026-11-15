@@ -23,6 +23,7 @@ from ..intelligence import history as history_mod
 from . import js_api as js_api_mod
 from . import origin_ip as origin_mod
 from . import paths as paths_mod
+from . import ports as ports_mod
 from . import website as website_mod
 from ._http import get as http_get
 from ._http import request as http_request
@@ -33,7 +34,7 @@ DEEP_TESTS = [
     "core-audit", "domain-history", "certificate-history", "admin-contact",
     "country-servers", "deep-paths", "http-methods", "redirect-chain",
     "js-api-reverse", "real-ip", "published-contacts", "permissions",
-    "certificates",
+    "certificates", "ports", "adaptive-probe",
 ]
 
 
@@ -98,7 +99,7 @@ def mega_scan(url, scope=None, settings=None, timeout=15, progress=None):
     scan = website_mod.investigate_website(
         url, scope=scope, max_pages=max_pages, timeout=timeout, progress=tick)
     scan["kind"] = "mega-scan"
-    scan["tool"] = "CONAN FRAMEWORK v5.6"
+    scan["tool"] = "CONAN FRAMEWORK v5.7"
     scan["deep_tests"] = list(DEEP_TESTS)
     scan["scope"] = {"kind": "authorized" if authorized else "passive",
                      "authorized": authorized}
@@ -145,6 +146,17 @@ def mega_scan(url, scope=None, settings=None, timeout=15, progress=None):
         scan["permissions"] = _permissions_section(scan, timeout)
     except Exception as exc:
         scan["permissions"] = {"error": str(exc)}
+
+    # Ports + Sunlight/Echo adaptive probe — authorized targets only.
+    tick("ports")
+    if authorized:
+        try:
+            scan["ports"] = ports_mod.adaptive_probe(host, url, timeout=0.4)
+        except Exception as exc:
+            scan["ports"] = {"error": str(exc)}
+    else:
+        scan["ports"] = {"note": "Port scanning needs authorization "
+                                 "(your own site or written permission)."}
 
     # Deep paths (bounded probe) — authorized targets only.
     tick("deep-paths")

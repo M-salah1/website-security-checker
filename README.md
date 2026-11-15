@@ -1,4 +1,4 @@
-# CONAN FRAMEWORK v5.6 — ULTIMATE CYBER INVESTIGATION SYSTEM 🔍
+# CONAN FRAMEWORK v5.7 — ULTIMATE CYBER INVESTIGATION SYSTEM 🔍
 
 **CONAN DETECTIVE** — منصة تحقيق سيبراني معيارية متعددة اللغات.
 
@@ -9,7 +9,7 @@ GitHub: **M-salah1** — Copyright © 2026
 - **Command console**: full welcome page on entry, then a `conan >` prompt — `scan <url>`, `help`, `menu`, `about`, `lang`, `version`, `clear`, `exit`
 - **MEGA SCAN**: `scan <url>` runs every module together, one detailed report (identity, domain history, admin contact, country, servers, paths, deep tests)
 - 20-option interactive menu (via `menu`, or `python3 conan.py menu`) • 3 languages (العربية / Français / English, RTL)
-- v5.6 Ethical Defender Edition: safe lab, victim protection, defense center, animated reports
+- v5.0 Ethical Defender Edition: safe lab, victim protection, defense center, animated reports
 - Works on Android Termux, Linux and Windows PowerShell
 
 ## Start
@@ -140,6 +140,35 @@ full private report to your own Telegram account.
 
 If the token or the ID is wrong, Conan prints the Telegram error and
 nothing is sent.
+
+## Ports & Sunlight/Echo adaptive probe (v5.7)
+
+- **Progress percentage:** while a scan runs, the single loading line
+  now shows the real progress — `Scanning... 45%` — computed from
+  completed phases / total phases, never invented.
+- **Port scanning (authorized targets only):** the mega scan probes
+  the well-known ports of the target IP, reads the public banner each
+  open port sends, and then tries a plain HTTP request through every
+  open door with the site's Host header — recording which doors serve
+  the site's own public pages ("entry points"). A closed door stays
+  closed and is reported as closed.
+- **The Sunlight/Echo method (developer's invention):** like sunlight
+  blocked by a big wall, the probe shines from every door at once;
+  like a sound sent out and its echo listened for, every answer is
+  listened to and the next probe adapts to it. Phase 1 knocks on the
+  common doors. Phase 2 tries the related neighbours of every door
+  that answered (8080 open suggests 8000, 8888, 8443...). Phase 3
+  checks each open door with a real HTTP request. The method is
+  documented in `conan/scanners/ports.py` so the developer can file
+  it as a patent; filing itself is a legal process (national patent
+  office / patent agent), not something the tool does.
+- **Full port scan:** after a scan, the dashboard offers **6. Full
+  port scan** — all 65535 ports, with a progress percentage. It asks
+  for confirmation first (it takes minutes and is noisy) and runs only
+  on an authorized target.
+- **What it does NOT do:** it never logs in, never sends credentials,
+  never bypasses authentication or a firewall, never exploits a
+  service, and never hides or rotates its identity to evade detection.
 
 ## Scope and authorization — read this first
 

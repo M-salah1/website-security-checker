@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Main menu + smart investigation wizard for CONAN FRAMEWORK v5.6.
+"""Main menu + smart investigation wizard for CONAN FRAMEWORK v5.7.
 
 Welcome screen (full page: tool, developer, how-to) -> language
 selection -> command console (`conan >`): scan <url>, help, menu,
@@ -38,6 +38,7 @@ from ..scanners import ip_intelligence as ip_mod
 from ..scanners import malware as malware_mod
 from ..scanners import mega as mega_mod
 from ..scanners import paths as paths_mod
+from ..scanners import ports as ports_mod
 from ..scanners import phishing as phishing_mod
 from ..scanners import registration as reg_mod
 from ..scanners import vulnerabilities as vuln_mod
@@ -312,9 +313,9 @@ class MenuApp:
             print("  [%s/%s] %s" % (f["severity"].upper(), f["status"],
                                     self.disp(f["name"])))
         print(terminal.rule())
-        self.out("0. %s    1. %s    2. JSON    3. HTML    4. %s    5. %s" % (
+        self.out("0. %s    1. %s    2. JSON    3. HTML    4. %s    5. %s    6. %s" % (
             self.t("back"), self.t("findings"), self.t("animated_report"),
-            self.t("telegram")))
+            self.t("telegram"), self.t("full_port_scan")))
         try:
             choice = self.ask(self.t("enter_choice"))
         except NavCommand:
@@ -337,6 +338,59 @@ class MenuApp:
             self.out(self.t("export_done") + ": conan-report-animated.html")
         elif choice == "5":
             self.opt_send_telegram(rec)
+        elif choice == "6":
+            self.opt_full_port_scan(rec)
+
+    def opt_full_port_scan(self, rec):
+        """Full scan of all 65535 ports on the target IP.
+
+        Authorized targets only; asks for confirmation first because
+        it takes minutes and is noisy. Shows a progress percentage.
+        """
+        scan = rec["scan"]
+        url = scan.get("target") or ""
+        if not (scan.get("scope") or {}).get("authorized"):
+            self.out(self.t("ports_need_auth"))
+            return
+        host = url.split("/")[2] if "://" in url else url
+        self.out(self.t("full_port_scan_warn"))
+        try:
+            confirm = self.ask(self.t("confirm_yes"))
+        except NavCommand:
+            return
+        if (confirm or "").strip().lower() not in ("y", "yes", "نعم"):
+            return
+        total = 65535
+        done = [0]
+        tty = terminal.is_tty()
+
+        def progress():
+            done[0] += 1
+            if tty and done[0] % 500 == 0:
+                sys.stdout.write("\r\x1b[K%s %d%%" % (
+                    self.t("scanning_ports"),
+                    int(100 * done[0] / total)))
+                sys.stdout.flush()
+
+        open_ports = ports_mod.scan_all_ports(host, progress=progress)
+        if tty:
+            sys.stdout.write("\r\x1b[K")
+            sys.stdout.flush()
+        entries = ports_mod.probe_entry_points(host, open_ports, url)
+        scan.setdefault("ports", {})["full_scan"] = {
+            "open_ports": open_ports, "open_count": len(open_ports),
+            "entry_points": entries,
+            "doors_serving_site": [e["port"] for e in entries
+                                   if e.get("serves_site")]}
+        self.out("%s: %d" % (self.t("open_ports"), len(open_ports)))
+        for p in open_ports[:20]:
+            banner = (" — %s" % p["banner"][:80]) if p.get("banner") else ""
+            print("   [%d] %s%s" % (p["port"], p.get("service", "?"), banner))
+        doors = [e["port"] for e in entries if e.get("serves_site")]
+        self.out("%s: %s" % (self.t("entry_points"),
+                             ", ".join(str(d) for d in doors)
+                             if doors else self.t("none")))
+        self.pause()
 
     def opt_send_telegram(self, rec):
         """Optional Telegram delivery of the full report.
@@ -534,9 +588,25 @@ class MenuApp:
                                         perms.get("tls_days_left")))
         self.out("   %s: %s" % (self.disp(self.t("ct_certificates")),
                                perms.get("ct_certificates", 0)))
-        # 10. Deep tests + findings
+        # 10. Ports & Sunlight/Echo adaptive probe
         print(terminal.rule())
-        self.out("10. %s" % self.disp(self.t("deep_tests")))
+        self.out("10. %s" % self.disp(self.t("ports_section")))
+        ports = scan.get("ports") or {}
+        if ports.get("note"):
+            self.out("   %s" % self.disp(ports["note"]))
+        else:
+            self.out("   %s: %s" % (self.disp(self.t("open_ports")),
+                                   ports.get("open_count", 0)))
+            for p in (ports.get("open_ports") or [])[:15]:
+                banner = (" — %s" % p["banner"][:80]) if p.get("banner") else ""
+                print("   [%d] %s%s" % (p["port"], p.get("service", "?"), banner))
+            doors = ports.get("doors_serving_site") or []
+            self.out("   %s: %s" % (self.disp(self.t("entry_points")),
+                                   ", ".join(str(d) for d in doors)
+                                   if doors else self.disp(self.t("none"))))
+        # 11. Deep tests + findings
+        print(terminal.rule())
+        self.out("11. %s" % self.disp(self.t("deep_tests")))
         self.out("   %s" % ", ".join(scan.get("deep_tests") or []))
         findings = scan.get("findings") or []
         dist = scan.get("severity_distribution") or {}
@@ -597,7 +667,7 @@ class MenuApp:
             findings += vuln_mod.test_file_upload(forms.get("forms", []), url)
         finally:
             inv.done()
-        scan = {"tool": "CONAN FRAMEWORK v5.6", "target": url,
+        scan = {"tool": "CONAN FRAMEWORK v5.7", "target": url,
                 "kind": "vulnerability-audit",
                 "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

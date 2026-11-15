@@ -103,10 +103,13 @@ class Investigation:
                 self._frame += 1
             spin = SPINNER[frame % len(SPINNER)]
             # While a scan runs, the tool writes only this one line:
-            # spinner + "Scanning..." with animated dots. Phase names and
+            # spinner + "Scanning..." with animated dots and the real
+            # progress percentage (completed phases / total phases,
+            # capped at 99% until the scan finishes). Phase names and
             # log messages are tracked internally, never printed.
             dots = "." * (1 + (frame // 4) % 3)
-            line = "\r\x1b[K%s Scanning%s" % (terminal.orange(spin), dots)
+            line = "\r\x1b[K%s Scanning%s %d%%" % (
+                terminal.orange(spin), dots, self.percent())
             try:
                 sys.stdout.write(line)
                 sys.stdout.flush()
@@ -118,6 +121,12 @@ class Investigation:
             sys.stdout.flush()
         except Exception:
             pass
+
+    def percent(self):
+        """Real progress percentage (completed phases / total), capped
+        at 99% until the scan finishes — never invented."""
+        with self._lock:
+            return min(99, int(100 * self.done_count / self.total))
 
     def phase(self, name):
         """Mark one real phase as done and move to the next."""
