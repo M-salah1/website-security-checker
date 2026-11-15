@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Interactive shell for CONAN FRAMEWORK v5.0.
+"""Interactive shell for CONAN FRAMEWORK v5.1.
 
 Commands: help, about, version, clear, exit, scan, discover, paths, headers,
 tls, cookies, forms, api, phishing, health, xss, sqli, csrf, auth-test,
@@ -23,8 +23,9 @@ except Exception:
 
 from . import __version__
 from .core import engine
-from .core.animation import Investigation
+from .core.animation import Investigation, play_intro
 from .core.configuration import load_settings, save_settings
+from .core.i18n import ar_display, set_reverse_arabic
 from .core.evidence import count_by_severity, sort_findings
 from .core.scope import ScopeManager, ScopeError
 from .core import terminal
@@ -114,7 +115,8 @@ def _lang():
 
 
 def _tr(key):
-    return SHELL_STR.get(key, {}).get(_lang(), SHELL_STR[key]["en"])
+    text = SHELL_STR.get(key, {}).get(_lang(), SHELL_STR[key]["en"])
+    return ar_display(text, _lang())
 
 
 def _engine_findings(audit, target):
@@ -144,6 +146,7 @@ def _recommendations(findings, audit):
 class Shell:
     def __init__(self, no_animation=False, lang=None):
         self.settings = load_settings()
+        set_reverse_arabic(self.settings.get("reverse_arabic", True))
         if lang:
             self.settings["language"] = lang
         engine.set_lang(self.settings.get("language", "ar"))
@@ -213,7 +216,7 @@ class Shell:
         self.last_target = url
         t0 = time.time()
         inv = self._anim(total=11, quiet=quiet)
-        scan = {"tool": "CONAN FRAMEWORK v5.0", "target": url,
+        scan = {"tool": "CONAN FRAMEWORK v5.1", "target": url,
                 "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 "language": _lang(), "findings": []}
         inv.start()
@@ -326,7 +329,7 @@ class Shell:
 
     def print_summary(self, scan):
         print(terminal.rule())
-        print(terminal.orange("🔍 CONAN FRAMEWORK v5.0 — %s" % scan["target"]))
+        print(terminal.orange("🔍 CONAN FRAMEWORK v5.1 — %s" % scan["target"]))
         print("Score: %s%%  Grade: %s  Confidence: %s%%  Duration: %s s" % (
             scan.get("score"), scan.get("grade"), scan.get("confidence"),
             scan.get("duration_s")))
@@ -694,6 +697,8 @@ class Shell:
 
     # -- main loop ----------------------------------------------------------
     def run(self):
+        play_intro(enabled=self.settings.get("animation", True)
+                   and not self.no_animation)
         print(terminal.banner())
         print(_tr("welcome"))
         while True:
@@ -794,7 +799,7 @@ def _raw_cookies(headers):
 def main(argv=None):
     ap = argparse.ArgumentParser(
         prog="conan",
-        description="CONAN FRAMEWORK v5.0 — Advanced Website Security Detective")
+        description="CONAN FRAMEWORK v5.1 — Advanced Website Security Detective")
     ap.add_argument("url", nargs="?", help="Target URL to scan")
     ap.add_argument("--lang", choices=["en", "fr", "ar"], default=None)
     ap.add_argument("--json", action="store_true", help="Print the unified JSON report")

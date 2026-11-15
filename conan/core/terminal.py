@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Terminal capabilities and brand colours for CONAN FRAMEWORK v5.0.
+"""Terminal capabilities and brand colours for CONAN FRAMEWORK v5.1.
 
 Brand: deep black background, charcoal surfaces, bright orange highlights,
 white typography, green = passed, red = critical, yellow = warning,
@@ -10,6 +10,8 @@ also works on plain terminals (TERM=dumb, NO_COLOR, piped output).
 import os
 import shutil
 import sys
+
+from .i18n import ar_display
 
 # ANSI colours (brand palette)
 ORANGE = "38;5;208"
@@ -91,10 +93,10 @@ def progress_bar(done, total, width=30):
 
 
 def banner():
-    """CONAN FRAMEWORK v5.0 ASCII identity — magnifying glass + shield."""
+    """CONAN FRAMEWORK v5.1 ASCII identity — magnifying glass + shield."""
     lines = [
-        orange("   🔍  CONAN FRAMEWORK v5.0"),
-        orange("   ULTIMATE CYBER INVESTIGATION SYSTEM  •  المحقق كونان"),
+        orange("   🔍  CONAN FRAMEWORK v5.1"),
+        orange("   ULTIMATE CYBER INVESTIGATION SYSTEM  •  " + ar_display("المحقق كونان")),
         grey("   ────────────────────────────────────────────────"),
         "   Developer: " + bold("Hafed Mehdi Salah Eddine") + "  •  Algeria 🇩🇿",
         "   GitHub: M-salah1  •  Copyright © 2026",

@@ -33,6 +33,29 @@ LOG_MESSAGES = [
 ]
 
 
+def play_intro(enabled=True):
+    """Animated intro: a magnifying glass sweeps across ONE line.
+
+    Runs only on a real terminal with animation on; everywhere else it
+    does nothing, so piped output and tests stay clean.
+    """
+    if not enabled or not terminal.is_tty() \
+            or os.environ.get("TERM", "") == "dumb" \
+            or os.environ.get("NO_COLOR"):
+        return
+    width = 34
+    try:
+        for pos in list(range(0, width, 3)) + list(range(width, 0, -3)):
+            line = "─" * pos + "🔍" + "─" * max(0, width - pos - 1)
+            sys.stdout.write("\r\x1b[K  " + terminal.orange(line) + "  CONAN")
+            sys.stdout.flush()
+            time.sleep(0.07)
+        sys.stdout.write("\r\x1b[K")
+        sys.stdout.flush()
+    except Exception:
+        pass
+
+
 class Investigation:
     """Threaded animation bound to real scan phases.
 
@@ -44,6 +67,10 @@ class Investigation:
         inv.phase("Analyzing headers")
         ...
         inv.done()
+
+    The whole loading display lives on ONE terminal line: the spinner,
+    progress bar, current phase and the latest log message are all
+    redrawn in place with carriage return — no new line per update.
     """
 
     def __init__(self, enabled=True, total=1, quiet=False):
@@ -54,6 +81,7 @@ class Investigation:
         self.total = max(1, total)
         self.done_count = 0
         self.current = ""
+        self.last_log = ""
         self._stop = threading.Event()
         self._thread = None
         self._lock = threading.Lock()
@@ -75,14 +103,24 @@ class Investigation:
                 self._frame += 1
                 done = self.done_count
                 current = self.current
+                last_log = self.last_log
             spin = SPINNER[frame % len(SPINNER)]
             radar = RADAR[frame % len(RADAR)]
             det = DETECTIVE[frame % len(DETECTIVE)]
             bar = terminal.progress_bar(done, self.total, width=24)
             elapsed = time.time() - self.started_at if self.started_at else 0
-            line = "\r%s %s %s %s  %s  %.1fs  %s" % (
+            # Keep the visible line short enough to never wrap: the latest
+            # log message joins the same line instead of opening a new one.
+            width = max(40, terminal.term_width() - 2)
+            budget = max(10, width - 50)
+            cur = current[:budget // 2]
+            log = last_log[:budget - len(cur)]
+            tail = ("  %s" % cur) if cur else ""
+            if log:
+                tail += ("  |  %s" % log)
+            line = "\r\x1b[K%s %s %s %s  %s  %.1fs%s" % (
                 terminal.orange(spin), radar, det, terminal.orange("CONAN"),
-                bar, elapsed, current[:40])
+                bar, elapsed, tail)
             try:
                 sys.stdout.write(line)
                 sys.stdout.flush()
@@ -90,7 +128,7 @@ class Investigation:
                 break
             self._stop.wait(self.interval)
         try:
-            sys.stdout.write("\r" + " " * (terminal.term_width() - 1) + "\r")
+            sys.stdout.write("\r\x1b[K")
             sys.stdout.flush()
         except Exception:
             pass
@@ -104,16 +142,17 @@ class Investigation:
             print("[%d/%d] %s" % (self.done_count, self.total, name))
 
     def log(self, message):
-        """A real-time investigation log line (printed above the animation)."""
+        """A real-time investigation log line.
+
+        While the animation runs, the message joins the single loading
+        line (latest message wins) instead of opening a new line.
+        Without animation (piped output), it prints normally.
+        """
         if self.quiet:
             return
         if self.enabled:
-            try:
-                sys.stdout.write("\r" + " " * (terminal.term_width() - 1) + "\r")
-                print(message)
-                sys.stdout.flush()
-            except Exception:
-                print(message)
+            with self._lock:
+                self.last_log = str(message)
         else:
             print(message)
 

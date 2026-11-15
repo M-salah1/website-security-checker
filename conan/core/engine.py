@@ -51,6 +51,16 @@ import urllib.parse
 import urllib.request
 
 
+try:
+    from .i18n import ar_display, get_reverse_arabic
+except Exception:  # pragma: no cover - standalone use
+    def ar_display(text, lang="ar"):
+        return text
+
+    def get_reverse_arabic():
+        return False
+
+
 VERSION = "4.0"
 TOOL_NAME = "المحقق كونان - Conan Detective"
 DEVELOPER_NAME = "Hafed Mehdi Salah Eddine"
@@ -275,9 +285,16 @@ def set_lang(code):
 
 
 def out(line=""):
-    """طباعة سطر: في العربية يبدأ بعلامة RTL حتى يظهر من اليمين لليسار."""
+    """طباعة سطر: في العربية يبدأ بعلامة RTL حتى يظهر من اليمين لليسار.
+
+    مع وضع عكس العربية (Termux): تطبع الكلمات العربية معكوسة مسبقاً
+    وبدون علامة RTL، فتعرضها الطرفية مقروءة.
+    """
     if LANG == "ar" and line:
-        print(RLM + line)
+        if get_reverse_arabic():
+            print(ar_display(line, "ar"))
+        else:
+            print(RLM + line)
     else:
         print(line)
 

@@ -1,4 +1,4 @@
-# CONAN FRAMEWORK v5.0 — ULTIMATE CYBER INVESTIGATION SYSTEM 🔍
+# CONAN FRAMEWORK v5.1 — ULTIMATE CYBER INVESTIGATION SYSTEM 🔍
 
 **CONAN DETECTIVE** — منصة تحقيق سيبراني معيارية متعددة اللغات.
 
@@ -7,7 +7,7 @@ GitHub: **M-salah1** — Copyright © 2026
 
 - Python standard library only — no required dependencies
 - 20-option interactive menu • wizard-driven investigations • 3 languages (العربية / Français / English, RTL)
-- v5.0 Ethical Defender Edition: safe lab, victim protection, defense center, animated reports
+- v5.1 Ethical Defender Edition: safe lab, victim protection, defense center, animated reports
 - Works on Android Termux, Linux and Windows PowerShell
 
 ## Start
@@ -52,7 +52,7 @@ previous screen or the main menu, and `0` on the main menu exits.
 BACK preserves completed results — cases live in `conan-cases.json` and
 sessions in `conan-sessions.json`.
 
-## v5.0 Ethical Defender Edition — what it is and what it is not
+## Ethical Defender Edition — what it is and what it is not
 
 **Built for ethical hackers and defenders:** a safe lab on localhost to
 train on, authorized non-destructive tests on your own sites (or sites
@@ -67,6 +67,21 @@ preserving evidence, and reporting to the host/registrar and the police.
 Conan never attacks an attacker's machine, never launches DDoS, never
 guesses passwords, never bypasses logins, and never shows password or
 session-cookie values.
+
+## v5.1 Design release — animated interface, one-line loader, readable Arabic
+
+- **Animated design:** a magnifying-glass sweep intro on startup, a
+  coloured numbered menu (orange numbers, green protection-mode line),
+  and the existing animated HTML report (radar sweep, animated score ring).
+- **One-line loader:** the whole scan progress lives on a single
+  terminal line — spinner, radar, progress bar, elapsed time, current
+  phase and the latest log message are redrawn in place; nothing opens
+  a new line while loading.
+- **Readable Arabic on Termux:** some terminals show Arabic reversed
+  ("عربي" appears as "يبرع"). Conan now prints Arabic pre-reversed by
+  default, so the terminal flips it back to readable Arabic. Latin
+  text, digits and URLs are untouched. Toggle it in Settings (menu 16,
+  option 6) or in `conan-settings.json` (`"reverse_arabic": false`).
 
 ## Scope and authorization — read this first
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Settings for CONAN FRAMEWORK v5.0 — plain JSON, no secrets inside.
+"""Settings for CONAN FRAMEWORK v5.1 — plain JSON, no secrets inside.
 
 Secrets (test credentials) are NEVER stored here; they live only in the
 encrypted scope file managed by conan.core.scope.
@@ -11,6 +11,7 @@ import os
 DEFAULTS = {
     "language": "ar",
     "animation": True,
+    "reverse_arabic": True,
     "timeout": 15,
     "max_depth": 2,
     "max_pages": 50,

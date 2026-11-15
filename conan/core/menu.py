@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Main menu + smart investigation wizard for CONAN FRAMEWORK v5.0.
+"""Main menu + smart investigation wizard for CONAN FRAMEWORK v5.1.
 
 Welcome screen -> language selection (remembered) -> 20-option menu.
 The wizard asks for URL/IP, validates it, checks scope/authorization, asks
@@ -16,10 +16,10 @@ import time
 import urllib.parse
 
 from . import terminal
-from .animation import Investigation
+from .animation import Investigation, play_intro
 from .authorization import AuthorizationManager, ScopeError
 from .configuration import load_settings, save_settings
-from .i18n import I18n
+from .i18n import I18n, ar_display, set_reverse_arabic
 from .navigation import (NavCommand, NavigationStack, SessionStore,
                         normalize_nav_command)
 from .. import __version__
@@ -76,6 +76,9 @@ def _valid_ip(text):
 class MenuApp:
     def __init__(self, no_animation=False):
         self.settings = load_settings()
+        # Arabic display fix: honour the saved reverse_arabic setting
+        # everywhere (menu, shell, engine reports) via the i18n global.
+        set_reverse_arabic(self.settings.get("reverse_arabic", True))
         self.i18n = I18n(self.settings.get("language", "ar"))
         self.no_animation = no_animation
         self.scope = AuthorizationManager()
@@ -93,6 +96,15 @@ class MenuApp:
     # -- i/o helpers -------------------------------------------------------
     def t(self, key):
         return self.i18n.t(key)
+
+    def disp(self, text):
+        """Display form of `text` for direct print() lines.
+
+        Applies the Arabic Termux fix (pre-reversed Arabic runs) when it
+        is on; a no-op otherwise. Use this for any print() line that can
+        contain Arabic — out()/rtl() already do it for their own lines.
+        """
+        return ar_display(str(text), self.i18n.lang)
 
     def out(self, text=""):
         self.i18n.out(text)
@@ -151,8 +163,10 @@ class MenuApp:
 
     # -- screens -----------------------------------------------------------
     def welcome(self):
-        print(terminal.orange("   🔍  " + self.t("app_title")))
-        print(terminal.orange("   " + self.t("app_subtitle")))
+        play_intro(enabled=self.settings.get("animation", True)
+                   and not self.no_animation)
+        print(terminal.orange("   🔍  " + self.disp(self.t("app_title"))))
+        print(terminal.orange("   " + self.disp(self.t("app_subtitle"))))
         print(terminal.grey("   ────────────────────────────────────────────────"))
         self.out("   %s: Hafed Mehdi Salah Eddine" % self.t("developer"))
         self.out("   %s: M-salah1" % self.t("github"))
@@ -162,7 +176,7 @@ class MenuApp:
 
     def language_screen(self):
         self.out(self.t("choose_language") + ":")
-        print("   1. العربية")
+        print("   1. " + self.disp("العربية"))
         print("   2. Français")
         print("   3. English")
         current = {"ar": "1", "fr": "2", "en": "3"}.get(self.i18n.lang, "1")
@@ -184,13 +198,16 @@ class MenuApp:
 
     def main_menu(self):
         print(terminal.rule())
-        print(terminal.orange("   " + self.t("main_menu")))
+        print(terminal.orange("   " + self.disp(self.t("main_menu"))))
         for i in range(1, 21):
-            print("   %2d. %s" % (i, self.t("menu_%d" % i)))
+            print("   %s %s" % (terminal.orange("%2d." % i),
+                                self.disp(self.t("menu_%d" % i))))
         # Visible back button: on the main menu there is nowhere back to,
         # so 0 exits — exactly like the phone back button on a home screen.
-        print("    0. %s" % self.t("back_exit"))
+        print("    %s %s" % (terminal.orange("0."),
+                             self.disp(self.t("back_exit"))))
         print(terminal.rule())
+        print(terminal.green("   🛡  " + self.disp(self.t("shield_line"))))
         self.out(self.t("back_hint"))
 
     # -- case / results ----------------------------------------------------
@@ -220,7 +237,8 @@ class MenuApp:
         self.out("%s: %s" % (self.t("findings"),
                              ", ".join("%s=%d" % (k, v) for k, v in dist.items() if v)))
         for f in (scan.get("findings") or [])[:8]:
-            print("  [%s/%s] %s" % (f["severity"].upper(), f["status"], f["name"]))
+            print("  [%s/%s] %s" % (f["severity"].upper(), f["status"],
+                                    self.disp(f["name"])))
         print(terminal.rule())
         self.out("0. %s    1. %s    2. JSON    3. HTML    4. %s" % (
             self.t("back"), self.t("findings"), self.t("animated_report")))
@@ -230,9 +248,10 @@ class MenuApp:
             return
         if choice == "1":
             for f in (scan.get("findings") or []):
-                print("  [%s/%s] %s" % (f["severity"].upper(), f["status"], f["name"]))
-                print("      %s" % f.get("evidence", "")[:180])
-                print("      Fix: %s" % f.get("remediation", "")[:180])
+                print("  [%s/%s] %s" % (f["severity"].upper(), f["status"],
+                                        self.disp(f["name"])))
+                print("      %s" % self.disp(f.get("evidence", "")[:180]))
+                print("      Fix: %s" % self.disp(f.get("remediation", "")[:180]))
             self.pause()
         elif choice == "2":
             save_json_report(scan, "conan-report.json")
@@ -292,7 +311,7 @@ class MenuApp:
             findings += vuln_mod.test_file_upload(forms.get("forms", []), url)
         finally:
             inv.done()
-        scan = {"tool": "CONAN FRAMEWORK v5.0", "target": url,
+        scan = {"tool": "CONAN FRAMEWORK v5.1", "target": url,
                 "kind": "vulnerability-audit",
                 "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -390,7 +409,7 @@ class MenuApp:
         for f in res["public_files"]:
             print("  [%s] %s (%d bytes)" % (f["status"], f["url"], f["size"]))
         for f in res["findings"]:
-            print("  [%s] %s — %s" % (f["severity"].upper(), f["name"], f["evidence"]))
+            print("  [%s] %s — %s" % (f["severity"].upper(), self.disp(f["name"]), self.disp(f["evidence"])))
         print(terminal.grey(res["note"]))
         print(terminal.rule())
         self.pause()
@@ -418,7 +437,7 @@ class MenuApp:
             res = auth_mod.audit_auth(url, self.scope)
             for f in res.get("findings", []):
                 print("  [%s/%s] %s — %s" % (f["severity"].upper(), f["status"],
-                                             f["name"], f["evidence"]))
+                                             self.disp(f["name"]), self.disp(f["evidence"])))
             print("Login HTTP status: %s  Session rotated: %s" % (
                 res.get("login_status"), res.get("session_rotated")))
         self.pause()
@@ -430,7 +449,7 @@ class MenuApp:
         res = reg_mod.audit_registration(url, self.scope)
         for f in res.get("findings", []):
             print("  [%s/%s] %s — %s" % (f["severity"].upper(), f["status"],
-                                         f["name"], f["evidence"]))
+                                         self.disp(f["name"]), self.disp(f["evidence"])))
         print(res.get("note", ""))
         self.pause()
 
@@ -455,7 +474,7 @@ class MenuApp:
                 print("    [%s] %s" % (ind["severity"], ind["pattern"]))
         for f in res.get("findings", []):
             print("  [%s/%s] %s — %s" % (f["severity"].upper(), f["status"],
-                                         f["name"], f["evidence"]))
+                                         self.disp(f["name"]), self.disp(f["evidence"])))
         self.pause()
 
     def opt_lab(self):
@@ -479,7 +498,7 @@ class MenuApp:
             self.out(self.t("training_scan") + "...")
             res = safe_lab.run_lab_training(url)
             for f in res["findings"]:
-                print("  [%s/%s] %s" % (f["severity"].upper(), f["status"], f["name"]))
+                print("  [%s/%s] %s" % (f["severity"].upper(), f["status"], self.disp(f["name"])))
                 print("      %s" % f.get("training_note", "")[:200])
             if not res["findings"]:
                 self.out("No findings — the lab may not have started correctly.")
@@ -497,11 +516,11 @@ class MenuApp:
         """
         self.nav.push("victim")
         while True:
-            print("  1. %s" % self.t("record_incident"))
-            print("  2. %s" % self.t("safety_plan"))
-            print("  3. %s" % self.t("evidence_checklist"))
-            print("  4. %s" % self.t("channels"))
-            print("  0. %s" % self.t("back"))
+            print("  1. %s" % self.disp(self.t("record_incident")))
+            print("  2. %s" % self.disp(self.t("safety_plan")))
+            print("  3. %s" % self.disp(self.t("evidence_checklist")))
+            print("  4. %s" % self.disp(self.t("channels")))
+            print("  0. %s" % self.disp(self.t("back")))
             try:
                 choice = self.ask(self.t("enter_choice"))
             except NavCommand:
@@ -530,12 +549,12 @@ class MenuApp:
         """
         self.nav.push("defense")
         while True:
-            print("  1. %s (Apache)" % self.t("hardening"))
-            print("  2. %s (Nginx)" % self.t("hardening"))
-            print("  3. %s" % self.t("incident_plan"))
-            print("  4. %s" % self.t("takedown_template"))
-            print("  5. %s" % self.t("animated_report"))
-            print("  0. %s" % self.t("back"))
+            print("  1. %s (Apache)" % self.disp(self.t("hardening")))
+            print("  2. %s (Nginx)" % self.disp(self.t("hardening")))
+            print("  3. %s" % self.disp(self.t("incident_plan")))
+            print("  4. %s" % self.disp(self.t("takedown_template")))
+            print("  5. %s" % self.disp(self.t("animated_report")))
+            print("  0. %s" % self.disp(self.t("back")))
             try:
                 choice = self.ask(self.t("enter_choice"))
             except NavCommand:
@@ -667,12 +686,14 @@ class MenuApp:
     def opt_settings(self):
         self.nav.push("settings")
         while True:
-            print("  1. %s: %s" % (self.t("language"), self.i18n.lang))
-            print("  2. %s: %s" % (self.t("animation"), self.settings.get("animation")))
-            print("  3. %s: %s" % (self.t("timeout"), self.settings.get("timeout")))
-            print("  4. %s: %s" % (self.t("max_pages"), self.settings.get("max_pages")))
+            print("  1. %s: %s" % (self.disp(self.t("language")), self.i18n.lang))
+            print("  2. %s: %s" % (self.disp(self.t("animation")), self.settings.get("animation")))
+            print("  3. %s: %s" % (self.disp(self.t("timeout")), self.settings.get("timeout")))
+            print("  4. %s: %s" % (self.disp(self.t("max_pages")), self.settings.get("max_pages")))
             print("  5. Scope: %d targets" % len(self.scope.targets))
-            print("  0. " + self.t("main_menu"))
+            print("  6. %s: %s" % (self.disp(self.t("reverse_arabic")),
+                                  self.settings.get("reverse_arabic", True)))
+            print("  0. " + self.disp(self.t("main_menu")))
             try:
                 choice = self.ask(self.t("enter_choice"))
             except NavCommand:
@@ -700,6 +721,12 @@ class MenuApp:
                 for t in self.scope.targets:
                     print("  %s (%s)" % (t["host"], t["kind"]))
                 self.pause()
+            elif choice == "6":
+                # Toggle the Termux Arabic fix live: on = write Arabic
+                # pre-reversed so the terminal shows it readable.
+                self.settings["reverse_arabic"] = not self.settings.get("reverse_arabic", True)
+                save_settings(self.settings)
+                set_reverse_arabic(self.settings["reverse_arabic"])
 
     # -- main loop -----------------------------------------------------------
     def run(self):

@@ -12,6 +12,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from conan.core.i18n import ar_display
 from conan.core.menu import MenuApp
 from conan.defense import hardening
 from conan.defense.victim_support import (create_protection_case,
@@ -143,7 +144,9 @@ class TestMenu20(unittest.TestCase):
             out = buf.getvalue()
             self.assertIn("20.", out)
             self.assertIn("17.", out)
-            self.assertIn(app.t("menu_19"), out)
+            # Menu labels go through the Arabic display fix (pre-reversed
+            # in Termux mode), so compare against the display form.
+            self.assertIn(ar_display(app.t("menu_19"), "ar"), out)
             self.assertIn("0.", out)
         finally:
             os.chdir(cwd)
