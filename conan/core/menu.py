@@ -20,7 +20,8 @@ from .animation import Investigation
 from .authorization import AuthorizationManager, ScopeError
 from .configuration import load_settings, save_settings
 from .i18n import I18n
-from .navigation import NavCommand, NavigationStack, SessionStore, is_nav_command
+from .navigation import (NavCommand, NavigationStack, SessionStore,
+                        normalize_nav_command)
 from .. import __version__
 from ..scanners import api as api_mod
 from ..scanners import authentication as auth_mod
@@ -93,34 +94,39 @@ class MenuApp:
         self.i18n.out(text)
 
     def ask(self, prompt):
-        """Read one line; navigation words raise NavCommand."""
+        """Read one line; navigation inputs raise NavCommand.
+
+        Navigation works everywhere, with a visible button: typing 0 (or
+        BACK / رجوع) goes back, HOME goes to the main menu, EXIT quits.
+        """
         try:
             line = input(self.i18n.rtl(prompt + " ")).strip()
         except KeyboardInterrupt:
             raise NavCommand("CANCEL")
         except EOFError:
             raise NavCommand("EXIT")
-        if is_nav_command(line):
-            raise NavCommand(line.upper())
+        cmd = normalize_nav_command(line)
+        if cmd:
+            raise NavCommand(cmd)
         return line
 
     def ask_url(self):
         while True:
-            url = self.ask(self.t("enter_url"))
+            url = self.ask(self.t("enter_url") + "  (" + self.t("back_option") + ")")
             if _valid_url(url):
                 return url.rstrip("/")
             self.out(self.t("invalid_url"))
 
     def ask_ip(self):
         while True:
-            ip = self.ask(self.t("enter_ip"))
+            ip = self.ask(self.t("enter_ip") + "  (" + self.t("back_option") + ")")
             if _valid_ip(ip):
                 return ip.strip()
             self.out(self.t("invalid_ip"))
 
     def ask_domain(self):
         while True:
-            d = self.ask(self.t("enter_url"))
+            d = self.ask(self.t("enter_url") + "  (" + self.t("back_option") + ")")
             d = d.strip().lower().replace("https://", "").replace("http://", "").split("/")[0]
             if d and "." in d:
                 return d
@@ -177,6 +183,9 @@ class MenuApp:
         print(terminal.orange("   " + self.t("main_menu")))
         for i in range(1, 18):
             print("   %2d. %s" % (i, self.t("menu_%d" % i)))
+        # Visible back button: on the main menu there is nowhere back to,
+        # so 0 exits — exactly like the phone back button on a home screen.
+        print("    0. %s" % self.t("back_exit"))
         print(terminal.rule())
         self.out(self.t("back_hint"))
 
@@ -209,8 +218,8 @@ class MenuApp:
         for f in (scan.get("findings") or [])[:8]:
             print("  [%s/%s] %s" % (f["severity"].upper(), f["status"], f["name"]))
         print(terminal.rule())
-        self.out("1. %s   2. JSON   3. HTML   4. %s" % (
-            self.t("findings"), self.t("main_menu")))
+        self.out("0. %s    1. %s    2. JSON    3. HTML" % (
+            self.t("back"), self.t("findings")))
         try:
             choice = self.ask(self.t("enter_choice"))
         except NavCommand:
@@ -320,11 +329,10 @@ class MenuApp:
     def opt_phishing(self):
         self.nav.push("phishing")
         url = self.ask_url()
-        official = ""
-        try:
-            official = self.ask("Official domain (optional, Enter to skip)")
-        except NavCommand:
-            official = ""
+        # Optional question — BACK / 0 here cancels the whole option and
+        # returns to the main menu (previously it was swallowed and the
+        # scan started anyway).
+        official = self.ask("Official domain (optional, Enter to skip)")
         res = rep_mod.reputation_report(url, official_domain=official or None)
         print(terminal.rule())
         print("Verdict: %s" % res["verdict"])
@@ -594,7 +602,9 @@ class MenuApp:
             try:
                 choice = self.ask(self.t("enter_choice"))
             except NavCommand as nav:
-                if nav.command == "EXIT":
+                # On the main menu, BACK (0) is the same as EXIT: there is
+                # nowhere further back to go.
+                if nav.command in ("EXIT", "BACK"):
                     break
                 continue
             handlers = {

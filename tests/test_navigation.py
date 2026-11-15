@@ -11,7 +11,27 @@ from unittest import mock
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from conan.core.menu import MenuApp, _valid_url, _valid_ip
-from conan.core.navigation import NavCommand
+from conan.core.navigation import NavCommand, normalize_nav_command
+
+
+class TestNavAliases(unittest.TestCase):
+    def test_zero_is_back(self):
+        self.assertEqual(normalize_nav_command("0"), "BACK")
+
+    def test_arabic_back(self):
+        self.assertEqual(normalize_nav_command("رجوع"), "BACK")
+
+    def test_back_word(self):
+        self.assertEqual(normalize_nav_command("back"), "BACK")
+
+    def test_home_and_exit(self):
+        self.assertEqual(normalize_nav_command("HOME"), "HOME")
+        self.assertEqual(normalize_nav_command("خروج"), "EXIT")
+
+    def test_plain_text_is_not_nav(self):
+        self.assertIsNone(normalize_nav_command("https://example.com"))
+        self.assertIsNone(normalize_nav_command("1"))
+        self.assertIsNone(normalize_nav_command("scan"))
 
 
 class TestValidation(unittest.TestCase):
@@ -44,6 +64,20 @@ class TestMenuInput(unittest.TestCase):
         with mock.patch("builtins.input", return_value="BACK"):
             with self.assertRaises(NavCommand) as ctx:
                 app.ask("Enter URL")
+            self.assertEqual(ctx.exception.command, "BACK")
+
+    def test_zero_back_button_raises(self):
+        app = MenuApp(no_animation=True)
+        with mock.patch("builtins.input", return_value="0"):
+            with self.assertRaises(NavCommand) as ctx:
+                app.ask("Enter URL")
+            self.assertEqual(ctx.exception.command, "BACK")
+
+    def test_arabic_back_raises(self):
+        app = MenuApp(no_animation=True)
+        with mock.patch("builtins.input", return_value="رجوع"):
+            with self.assertRaises(NavCommand) as ctx:
+                app.ask_url()
             self.assertEqual(ctx.exception.command, "BACK")
 
     def test_exit_command_raises(self):

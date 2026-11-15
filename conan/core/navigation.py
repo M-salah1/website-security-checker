@@ -17,6 +17,24 @@ import time
 SESSIONS_FILE = "conan-sessions.json"
 NAV_COMMANDS = ("BACK", "HOME", "MENU", "CANCEL", "EXIT")
 
+# What the user can type to navigate — including the visible "0" back
+# button and the Arabic words, so nobody has to memorise English words.
+_NAV_ALIASES = {
+    "0": "BACK", "رجوع": "BACK", "back": "BACK", "retour": "BACK",
+    "home": "HOME", "menu": "HOME", "القائمة": "HOME", "الرئيسية": "HOME",
+    "cancel": "CANCEL", "إلغاء": "CANCEL", "annuler": "CANCEL",
+    "exit": "EXIT", "quit": "EXIT", "خروج": "EXIT", "quitter": "EXIT",
+}
+
+
+def normalize_nav_command(text):
+    """Return BACK/HOME/MENU/CANCEL/EXIT for a navigation input, else None."""
+    return _NAV_ALIASES.get((text or "").strip().lower())
+
+
+def is_nav_command(text):
+    return normalize_nav_command(text) is not None
+
 
 class NavCommand(Exception):
     """Raised by input helpers when the user types a navigation command."""
@@ -24,10 +42,6 @@ class NavCommand(Exception):
     def __init__(self, command):
         super().__init__(command)
         self.command = command
-
-
-def is_nav_command(text):
-    return (text or "").strip().upper() in NAV_COMMANDS
 
 
 class NavigationStack:

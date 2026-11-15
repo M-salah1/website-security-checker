@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Menu entry point for CONAN FRAMEWORK v4.0 — welcome screen, language
+"""Menu entry point for CONAN FRAMEWORK v4.1 — welcome screen, language
 selection, 17-option main menu, wizard-driven investigations."""
 import argparse
 

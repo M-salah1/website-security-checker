@@ -1,4 +1,4 @@
-# CONAN FRAMEWORK v4.0 — ULTIMATE CYBER INVESTIGATION SYSTEM 🔍
+# CONAN FRAMEWORK v4.1 — ULTIMATE CYBER INVESTIGATION SYSTEM 🔍
 
 **CONAN DETECTIVE** — منصة تحقيق سيبراني معيارية متعددة اللغات.
 
@@ -41,7 +41,10 @@ python3 conan.py --version
 | 16 | Settings | Language, animation, timeout, max pages, scope |
 | 17 | Exit | |
 
-Navigation commands work at every prompt: **BACK / HOME / MENU / CANCEL / EXIT**.
+Navigation: no commands to memorise. After the language screen you get a
+numbered menu — type `1` for a scan, enter the URL, press Enter. At any
+prompt, **0** is the back button (also `BACK` / `رجوع`): it returns to the
+previous screen or the main menu, and `0` on the main menu exits.
 BACK preserves completed results — cases live in `conan-cases.json` and
 sessions in `conan-sessions.json`.
 
