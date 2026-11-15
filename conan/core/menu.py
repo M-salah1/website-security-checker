@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Main menu + smart investigation wizard for CONAN FRAMEWORK v5.7.
+"""Main menu + smart investigation wizard for CONAN FRAMEWORK v5.8.
 
 Welcome screen (full page: tool, developer, how-to) -> language
 selection -> command console (`conan >`): scan <url>, help, menu,
@@ -604,9 +604,27 @@ class MenuApp:
             self.out("   %s: %s" % (self.disp(self.t("entry_points")),
                                    ", ".join(str(d) for d in doors)
                                    if doors else self.disp(self.t("none"))))
-        # 11. Deep tests + findings
+        # 11. What Conan learned (Site Brain)
         print(terminal.rule())
-        self.out("11. %s" % self.disp(self.t("deep_tests")))
+        self.out("11. %s" % self.disp(self.t("learned_section")))
+        profile = scan.get("learned_profile") or {}
+        for rule in (profile.get("rules") or [])[:8]:
+            self.out("   • %s" % self.disp(rule))
+        changes = scan.get("learned_changes") or []
+        if changes:
+            self.out("   %s:" % self.disp(self.t("learned_changes")))
+            for ch in changes[:10]:
+                mark = {"added": "+", "removed": "-", "changed": "~"}.get(
+                    ch.get("kind"), "?")
+                self.out("   %s %s" % (mark, self.disp(ch.get("detail", ""))))
+        else:
+            self.out("   %s" % self.disp(self.t("no_changes")))
+        # 12. Deep tests + findings
+        print(terminal.rule())
+        self.out("12. %s" % self.disp(self.t("deep_tests")))
+        if scan.get("phase_timeouts"):
+            self.out("   %s: %s" % (self.disp(self.t("phase_timeout")),
+                                   ", ".join(scan["phase_timeouts"])))
         self.out("   %s" % ", ".join(scan.get("deep_tests") or []))
         findings = scan.get("findings") or []
         dist = scan.get("severity_distribution") or {}
@@ -667,7 +685,7 @@ class MenuApp:
             findings += vuln_mod.test_file_upload(forms.get("forms", []), url)
         finally:
             inv.done()
-        scan = {"tool": "CONAN FRAMEWORK v5.7", "target": url,
+        scan = {"tool": "CONAN FRAMEWORK v5.8", "target": url,
                 "kind": "vulnerability-audit",
                 "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

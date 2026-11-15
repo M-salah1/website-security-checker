@@ -1,4 +1,4 @@
-# CONAN FRAMEWORK v5.7 — ULTIMATE CYBER INVESTIGATION SYSTEM 🔍
+# CONAN FRAMEWORK v5.8 — ULTIMATE CYBER INVESTIGATION SYSTEM 🔍
 
 **CONAN DETECTIVE** — منصة تحقيق سيبراني معيارية متعددة اللغات.
 
@@ -169,6 +169,28 @@ nothing is sent.
 - **What it does NOT do:** it never logs in, never sends credentials,
   never bypasses authentication or a firewall, never exploits a
   service, and never hides or rotates its identity to evade detection.
+
+## Site Brain & no-freeze guarantee (v5.8)
+
+- **No more freezing at 70% (or any %):** every phase of the mega
+  scan now runs with a hard deadline (core audit 150s, identity/JS/
+  origin 40s each, ports and deep paths 90s each, methods/redirects
+  25s). A slow or hung phase is recorded as timed out in the report
+  and the scan moves on — the investigation always finishes.
+- **Site Brain — the tool learns the site:** each scan builds a
+  baseline profile of the site's rules and fundamentals from public
+  facts (server, TLS issuer, IPs, open ports, pages, API endpoints,
+  cookies, headers, methods, score), saved locally in
+  `conan-profiles.json`. On the next scan Conan compares the new
+  profile with the previous one and reports what appeared, what
+  disappeared and what changed — those changes are the site's faults
+  and regressions. Section 11 of the detailed report shows the rules
+  the tool learned and the changes since the last scan.
+- **What the tool cannot know:** live user counts and peak users live
+  inside the site's own private systems (analytics, server logs) and
+  cannot be observed from outside. Any tool that claims to show them
+  for a site it does not manage is inventing numbers. For your own
+  site, connect your own analytics or server logs instead.
 
 ## Scope and authorization — read this first
 

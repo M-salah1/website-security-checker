@@ -18,8 +18,10 @@ import time
 
 from ..core import engine
 from ..core.scope import ScopeError
+from ..core.timeout import call_with_timeout
 from ..intelligence import contacts as contacts_mod
 from ..intelligence import history as history_mod
+from ..intelligence import learning as learning_mod
 from . import js_api as js_api_mod
 from . import origin_ip as origin_mod
 from . import paths as paths_mod
@@ -34,7 +36,7 @@ DEEP_TESTS = [
     "core-audit", "domain-history", "certificate-history", "admin-contact",
     "country-servers", "deep-paths", "http-methods", "redirect-chain",
     "js-api-reverse", "real-ip", "published-contacts", "permissions",
-    "certificates", "ports", "adaptive-probe",
+    "certificates", "ports", "adaptive-probe", "learning",
 ]
 
 
@@ -96,96 +98,120 @@ def mega_scan(url, scope=None, settings=None, timeout=15, progress=None):
         except Exception:
             authorized = False
 
-    scan = website_mod.investigate_website(
-        url, scope=scope, max_pages=max_pages, timeout=timeout, progress=tick)
+    # Every phase runs with a hard deadline. A slow or hung phase
+    # (a blackholed host, a dead WHOIS server, a crawler loop) is
+    # recorded as timed out and the scan moves on — the investigation
+    # can never freeze at 70% (or any %) again.
+    timeouts = []
+
+    def safe(name, fn, seconds, fallback):
+        """Run one phase with a deadline; return fallback on timeout/error."""
+        tick(name)
+        try:
+            out = call_with_timeout(fn, seconds)
+        except Exception as exc:
+            return fallback(str(exc))
+        if isinstance(out, dict) and out.get("timed_out"):
+            timeouts.append(name)
+            return fallback(out.get("error", ""))
+        return out
+
+    def _core_fallback(err):
+        return {"target": url, "score": 0, "grade": "?",
+                "confidence": 0, "findings": [], "error": err}
+
+    scan = safe("core-audit",
+                lambda: website_mod.investigate_website(
+                    url, scope=scope, max_pages=max_pages,
+                    timeout=timeout, progress=tick),
+                150, _core_fallback)
     scan["kind"] = "mega-scan"
-    scan["tool"] = "CONAN FRAMEWORK v5.7"
+    scan["tool"] = "CONAN FRAMEWORK v5.8"
     scan["deep_tests"] = list(DEEP_TESTS)
     scan["scope"] = {"kind": "authorized" if authorized else "passive",
                      "authorized": authorized}
 
     # Homepage HTML once, reused by the deep-recon modules.
     try:
-        html = http_get(url, timeout=timeout)["body"]
+        html = call_with_timeout(
+            lambda: http_get(url, timeout=timeout)["body"], 20)
+        if isinstance(html, dict) and html.get("timed_out"):
+            timeouts.append("homepage")
+            html = ""
     except Exception:
         html = ""
     discovery_pages = (scan.get("discovery") or {}).get("pages") or []
 
     # Deep identity: domain history, admin contact, country, servers.
-    tick("domain-history")
-    try:
-        scan["history"] = history_mod.domain_history(host, url, timeout=timeout)
-    except Exception as exc:
-        scan["history"] = {"domain": host, "error": str(exc)}
+    scan["history"] = safe(
+        "domain-history",
+        lambda: history_mod.domain_history(host, url, timeout=timeout),
+        40, lambda e: {"domain": host, "error": e})
 
     # Published contacts from the site's own public pages.
-    tick("published-contacts")
-    try:
-        scan["contacts"] = contacts_mod.discover_contacts(
-            url, html, discovery_pages, timeout=timeout)
-    except Exception as exc:
-        scan["contacts"] = {"emails": [], "contact_lines": [], "error": str(exc)}
+    scan["contacts"] = safe(
+        "published-contacts",
+        lambda: contacts_mod.discover_contacts(
+            url, html, discovery_pages, timeout=timeout),
+        40, lambda e: {"emails": [], "contact_lines": [], "error": e})
 
     # Client-side reverse engineering: API endpoints from public JS.
-    tick("js-api-reverse")
-    try:
-        scan["js_api"] = js_api_mod.analyze_js(url, html, timeout=timeout)
-    except Exception as exc:
-        scan["js_api"] = {"endpoints": [], "error": str(exc)}
+    scan["js_api"] = safe(
+        "js-api-reverse",
+        lambda: js_api_mod.analyze_js(url, html, timeout=timeout),
+        40, lambda e: {"endpoints": [], "error": e})
 
     # Real-IP investigation: resolved IPs, CDN signals, direct-IP check.
-    tick("real-ip")
-    try:
-        scan["origin"] = origin_mod.investigate_origin(host, url, timeout=timeout)
-    except Exception as exc:
-        scan["origin"] = {"host": host, "ips": [], "error": str(exc)}
+    scan["origin"] = safe(
+        "real-ip",
+        lambda: origin_mod.investigate_origin(host, url, timeout=timeout),
+        40, lambda e: {"host": host, "ips": [], "error": e})
 
     # Permissions & certificates from observed headers + TLS.
-    tick("permissions")
-    try:
-        scan["permissions"] = _permissions_section(scan, timeout)
-    except Exception as exc:
-        scan["permissions"] = {"error": str(exc)}
+    scan["permissions"] = safe(
+        "permissions",
+        lambda: _permissions_section(scan, timeout),
+        25, lambda e: {"error": e})
 
     # Ports + Sunlight/Echo adaptive probe — authorized targets only.
-    tick("ports")
     if authorized:
-        try:
-            scan["ports"] = ports_mod.adaptive_probe(host, url, timeout=0.4)
-        except Exception as exc:
-            scan["ports"] = {"error": str(exc)}
+        scan["ports"] = safe(
+            "ports",
+            lambda: ports_mod.adaptive_probe(host, url, timeout=0.4),
+            90, lambda e: {"error": e})
     else:
+        tick("ports")
         scan["ports"] = {"note": "Port scanning needs authorization "
                                  "(your own site or written permission)."}
 
     # Deep paths (bounded probe) — authorized targets only.
-    tick("deep-paths")
     if authorized:
-        try:
-            scan["deep_paths"] = paths_mod.discover_paths(
-                url, None, timeout, 0.15, 60)
-        except Exception as exc:
-            scan["deep_paths"] = {"error": str(exc)}
+        scan["deep_paths"] = safe(
+            "deep-paths",
+            lambda: paths_mod.discover_paths(url, None, timeout, 0.15, 60),
+            90, lambda e: {"error": e})
     else:
+        tick("deep-paths")
         scan["deep_paths"] = []
         scan["deep_paths_note"] = (
             "Deep path probing needs authorization (your own site or written "
             "permission). Passive discovery results are in the report above.")
 
     # HTTP methods (read-only OPTIONS) + redirect chain.
-    tick("http-methods")
-    try:
-        scan["methods"] = history_mod.http_methods(url, timeout=timeout)
-    except Exception as exc:
-        scan["methods"] = {"error": str(exc)}
-    tick("redirect-chain")
-    try:
+    scan["methods"] = safe(
+        "http-methods",
+        lambda: history_mod.http_methods(url, timeout=timeout),
+        25, lambda e: {"error": e})
+
+    def _redirect_chain():
         r = http_request(url, method="GET", timeout=timeout, max_bytes=0)
-        scan["redirects"] = {"chain": r.get("chain") or [],
-                             "final_url": r.get("final_url") or url,
-                             "status": r.get("status")}
-    except Exception as exc:
-        scan["redirects"] = {"chain": [], "final_url": url, "error": str(exc)}
+        return {"chain": r.get("chain") or [],
+                "final_url": r.get("final_url") or url,
+                "status": r.get("status")}
+
+    scan["redirects"] = safe(
+        "redirect-chain", _redirect_chain,
+        25, lambda e: {"chain": [], "final_url": url, "error": e})
 
     # Servers summary, built only from observed public data.
     hist = scan.get("history") or {}
@@ -202,4 +228,16 @@ def mega_scan(url, scope=None, settings=None, timeout=15, progress=None):
     }
     scan["duration_s"] = round(time.time() - t0, 1)
     scan["finished_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    scan["phase_timeouts"] = timeouts
+
+    # Site Brain: learn this site's rules and fundamentals from the
+    # scan, and report what changed since the previous scan.
+    tick("learning")
+    try:
+        profile, changes = learning_mod.learn(scan)
+        scan["learned_profile"] = profile
+        scan["learned_changes"] = changes
+    except Exception as exc:
+        scan["learned_profile"] = {"error": str(exc)}
+        scan["learned_changes"] = []
     return scan
