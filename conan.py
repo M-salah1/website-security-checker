@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-المحقق كونان - Conan Detective v2.1.1
+المحقق كونان - Conan Detective v2.2
+واجهة بأسلوب Metasploit + 3 لغات (English / Français / العربية RTL)
 أداة فحص أمان دفاعية سلبية (Passive) لمواقع الويب - Termux
 Python standard library فقط، بدون تثبيت مكتبات.
 المطور: Hafed Mehdi Salah Eddine — الجزائر
@@ -25,13 +26,17 @@ Python standard library فقط، بدون تثبيت مكتبات.
   وليست إثبات استغلال.
 
 الاستعمال - استعملها فقط على موقعك الخاص أو موقع عندك إذن كتابي لفحصه:
-    python3 conan.py                        # واجهة تفاعلية: قائمة، عن الأداة، عن المطور
+    python3 conan.py                        # وحدة تحكم بأسلوب Metasploit: conan >
+    python3 conan.py --lang en             # English
+    python3 conan.py --lang fr             # Français
+    python3 conan.py --lang ar             # العربية (من اليمين لليسار)
     python3 conan.py https://example.com
-    python3 conan.py example.com
-    python3 conan.py https://example.com --json
+    python3 conan.py https://example.com --lang en --json
     python3 conan.py https://example.com -o تقرير.json
     python3 conan.py --about               # عن الأداة فقط
     python3 conan.py --developer            # عن المطور فقط
+أوامر وحدة التحكم: help | scan <url> | set target <url> | run | about |
+    developer | lang <en|fr|ar> | banner | clear | exit
 """
 
 import argparse
@@ -46,12 +51,213 @@ import urllib.parse
 import urllib.request
 
 
-VERSION = "2.1.1"
+VERSION = "2.2"
 TOOL_NAME = "المحقق كونان - Conan Detective"
 DEVELOPER_NAME = "Hafed Mehdi Salah Eddine"
 DEVELOPER_COUNTRY = "الجزائر 🇩🇿"
 DEVELOPER_GITHUB = "M-salah1"
 SYSTEM_TAGLINE = "نظام فحص قوي — دقيق، سريع، ويعمل بقوة"
+
+# ---------- اللغات: English / Français / العربية (RTL) ----------
+LANG = "ar"  # اللغة الحالية، تتغير بأمر lang أو --lang
+RLM = "\u200f"  # Right-to-Left Mark: يجعل السطر العربي يبدأ من اليمين
+LRI = "\u2066"  # Left-to-Right Isolate, PDI = \u2069 لإغلاقه
+
+STR = {
+    "tagline": {
+        "en": "Powerful website security audit system — precise, fast, strong",
+        "fr": "Système puissant d'audit de sécurité web — précis, rapide, fort",
+        "ar": "نظام فحص قوي — دقيق، سريع، ويعمل بقوة",
+    },
+    "subtitle": {
+        "en": "Powerful website security audit system",
+        "fr": "Système puissant d'audit de sécurité web",
+        "ar": "نظام فحص أمان قوي لمواقع الويب",
+    },
+    "version": {"en": "Version", "fr": "Version", "ar": "الإصدار"},
+    "developer": {"en": "Developer", "fr": "Développeur", "ar": "المطور"},
+    "works_strong": {"en": "works strong", "fr": "travaille fort", "ar": "يعمل بقوة"},
+    "checks_line": {
+        "en": "8 passive checks  •  0 exploits  •  3 languages",
+        "fr": "8 vérifications passives  •  0 exploit  •  3 langues",
+        "ar": "8 فحوصات سلبية  •  0 استغلال  •  3 لغات",
+    },
+    "type_help": {
+        "en": "Type 'help' to see commands.",
+        "fr": "Tapez 'help' pour voir les commandes.",
+        "ar": "اكتب 'help' لعرض الأوامر.",
+    },
+    "choose_lang": {
+        "en": "Choose language",
+        "fr": "Choisissez la langue",
+        "ar": "اختر اللغة",
+    },
+    "lang_set": {
+        "en": "Language set to English.",
+        "fr": "Langue définie sur Français.",
+        "ar": "تم تعيين اللغة على العربية.",
+    },
+    "lang_bad": {
+        "en": "Unknown language. Use: en, fr, ar.",
+        "fr": "Langue inconnue. Utilisez : en, fr, ar.",
+        "ar": "لغة غير معروفة. استعمل: en أو fr أو ar.",
+    },
+    "help_title": {
+        "en": "Commands",
+        "fr": "Commandes",
+        "ar": "الأوامر",
+    },
+    "enter_url": {
+        "en": "Enter website URL (e.g. https://example.com): ",
+        "fr": "Entrez l'URL du site (ex. https://example.com) : ",
+        "ar": "ادخل رابط الموقع (مثال: https://example.com): ",
+    },
+    "scanning": {"en": "Scanning... ", "fr": "Analyse en cours... ", "ar": "جارٍ الفحص... 🔎"},
+    "no_url": {"en": "No URL entered.", "fr": "Aucune URL saisie.", "ar": "لم تدخل رابطاً."},
+    "no_target": {
+        "en": "No target set. Use: scan <url>  or  set target <url>  then run",
+        "fr": "Aucune cible. Utilisez : scan <url>  ou  set target <url>  puis run",
+        "ar": "لا يوجد هدف. استعمل: scan <url>  أو  set target <url>  ثم run",
+    },
+    "target_set": {"en": "Target set to: ", "fr": "Cible définie : ", "ar": "تم تعيين الهدف: "},
+    "save_q": {
+        "en": "Save report as JSON? (y/N): ",
+        "fr": "Enregistrer le rapport en JSON ? (o/N) : ",
+        "ar": "هل تريد حفظ التقرير JSON؟ (y/N): ",
+    },
+    "saved": {"en": "Saved to: ", "fr": "Enregistré dans : ", "ar": "تم الحفظ في: "},
+    "goodbye": {"en": "Goodbye", "fr": "Au revoir", "ar": "مع السلامة 👋"},
+    "unknown_cmd": {
+        "en": "Unknown command. Type 'help'.",
+        "fr": "Commande inconnue. Tapez 'help'.",
+        "ar": "أمر غير معروف، اكتب 'help'.",
+    },
+    "about_tool_title": {"en": "About the tool", "fr": "À propos de l'outil", "ar": "عن الأداة"},
+    "about_dev_title": {"en": "About the developer", "fr": "À propos du développeur", "ar": "عن المطور"},
+    "country": {"en": "Country", "fr": "Pays", "ar": "البلد"},
+    "project": {"en": "Project", "fr": "Projet", "ar": "المشروع"},
+    "report_title": {
+        "en": "Website security audit report",
+        "fr": "Rapport d'audit de sécurité du site",
+        "ar": "تقرير فحص أمان الموقع",
+    },
+    "owner_section": {
+        "en": "Owner & domain info (public WHOIS)",
+        "fr": "Infos propriétaire & domaine (WHOIS public)",
+        "ar": "معلومات المالك والنطاق (WHOIS عام)",
+    },
+    "dns_section": {"en": "DNS & network", "fr": "DNS & réseau", "ar": "DNS والشبكة"},
+    "checks_section": {"en": "Check results", "fr": "Résultats des vérifications", "ar": "نتائج الفحص"},
+    "notes_section": {"en": "Notes", "fr": "Remarques", "ar": "ملاحظات"},
+    "vulns_section": {
+        "en": "Weaknesses / vulnerabilities",
+        "fr": "Faiblesses / vulnérabilités",
+        "ar": "الثغرات / نقاط الضعف",
+    },
+    "no_vulns": {
+        "en": "No visible weakness in this passive audit. Excellent!",
+        "fr": "Aucune faiblesse visible dans cet audit passif. Excellent !",
+        "ar": "لا توجد نقاط ضعف ظاهرة في هذا الفحص السلبي. ممتاز!",
+    },
+    "summary": {"en": "Summary", "fr": "Résumé", "ar": "الملخص"},
+    "score": {"en": "Security score", "fr": "Score de sécurité", "ar": "نسبة الأمان"},
+    "grade": {"en": "Grade", "fr": "Note", "ar": "التقييم"},
+    "top_fixes": {"en": "Top 3 fixes:", "fr": "Top 3 correctifs :", "ar": "أول 3 إصلاحات:"},
+    "warning": {
+        "en": "Note: passive audit of visible settings only, not a full security guarantee.",
+        "fr": "Note : audit passif des réglages visibles seulement, pas une garantie complète.",
+        "ar": "تنبيه: هذا فحص سلبي للإعدادات الظاهرة فقط، وليس ضماناً كاملاً للأمان.",
+    },
+    "details": {"en": "Details:", "fr": "Détails :", "ar": "التفاصيل:"},
+    "fix": {"en": "Fix:", "fr": "Correctif :", "ar": "الإصلاح:"},
+    "domain": {"en": "Domain", "fr": "Domaine", "ar": "النطاق"},
+    "registrar": {"en": "Registrar", "fr": "Bureau d'enregistrement", "ar": "المسجل"},
+    "created": {"en": "Created", "fr": "Créé le", "ar": "تاريخ الإنشاء"},
+    "expires": {"en": "Expires", "fr": "Expire le", "ar": "تاريخ الانتهاء"},
+    "org": {"en": "Registered organisation", "fr": "Organisation enregistrée", "ar": "المنظمة المسجلة"},
+    "nameservers": {"en": "Name servers", "fr": "Serveurs de noms", "ar": "خوادم الأسماء"},
+    "hidden": {"en": "hidden / not disclosed", "fr": "masqué / non divulgué", "ar": "محجوبة للخصوصية أو غير معلنة"},
+    "final_url": {"en": "Final URL", "fr": "URL finale", "ar": "الوجهة النهائية"},
+    "date": {"en": "Date (UTC)", "fr": "Date (UTC)", "ar": "التاريخ (UTC)"},
+}
+
+SEV_TR = {
+    "عالي": {"en": "HIGH", "fr": "ÉLEVÉ", "ar": "عالي"},
+    "متوسط": {"en": "MEDIUM", "fr": "MOYEN", "ar": "متوسط"},
+    "منخفض": {"en": "LOW", "fr": "FAIBLE", "ar": "منخفض"},
+}
+
+CHECK_TR = {
+    "HTTPS مفعل": {"en": "HTTPS enabled", "fr": "HTTPS activé"},
+    "شهادة TLS صالحة": {"en": "Valid TLS certificate", "fr": "Certificat TLS valide"},
+    "Strict-Transport-Security (HSTS)": {"en": "Strict-Transport-Security (HSTS)", "fr": "Strict-Transport-Security (HSTS)"},
+    "Content-Security-Policy": {"en": "Content-Security-Policy", "fr": "Content-Security-Policy"},
+    "حماية من التضمين في إطارات (X-Frame-Options)": {"en": "Frame embedding protection (X-Frame-Options)", "fr": "Protection contre l'intégration (X-Frame-Options)"},
+    "X-Content-Type-Options: nosniff": {"en": "X-Content-Type-Options: nosniff", "fr": "X-Content-Type-Options: nosniff"},
+    "Referrer-Policy": {"en": "Referrer-Policy", "fr": "Referrer-Policy"},
+    "Permissions-Policy": {"en": "Permissions-Policy", "fr": "Permissions-Policy"},
+    "ملفات تعريف الارتباط آمنة (Secure + HttpOnly)": {"en": "Secure cookies (Secure + HttpOnly)", "fr": "Cookies sécurisés (Secure + HttpOnly)"},
+    "ملفات تعريف الارتباط آمنة": {"en": "Secure cookies", "fr": "Cookies sécurisés"},
+    "HSTS": {"en": "HSTS", "fr": "HSTS"},
+    "بدون محتوى مختلط": {"en": "No mixed content", "fr": "Aucun contenu mixte"},
+}
+
+VULN_TR = {
+    "تعذر حل DNS": ("DNS resolution failed", "Échec de résolution DNS", "تحقق من إعدادات DNS والنطاق", "Check DNS settings and the domain", "Vérifiez les réglages DNS et le domaine"),
+    "شهادة TLS تنتهي قريباً": ("TLS certificate expiring soon", "Certificat TLS expirant bientôt", "جدد الشهادة قبل الانتهاء", "Renew the certificate before expiry", "Renouvelez le certificat avant expiration"),
+    "شهادة TLS منتهية": ("TLS certificate expired", "Certificat TLS expiré", "جدد الشهادة فوراً", "Renew the certificate immediately", "Renouvelez le certificat immédiatement"),
+    "تعذر التحقق من شهادة TLS": ("Could not verify TLS certificate", "Impossible de vérifier le certificat TLS", "تحقق من تثبيت الشهادة وسلسلتها", "Check the certificate installation and chain", "Vérifiez l'installation du certificat et sa chaîne"),
+    "الموقع يعمل بدون HTTPS": ("Site running without HTTPS", "Site sans HTTPS", "فعّل HTTPS وأعد توجيه http إلى https", "Enable HTTPS and redirect http to https", "Activez HTTPS et redirigez http vers https"),
+    "تعذر الوصول للموقع": ("Could not reach the site", "Impossible d'atteindre le site", "تحقق أن الموقع يعمل والرابط صحيح", "Check that the site is up and the URL is correct", "Vérifiez que le site fonctionne et que l'URL est correcte"),
+    "غياب HSTS": ("Missing HSTS", "HSTS manquant", "أضف Strict-Transport-Security: max-age=31536000; includeSubDomains", "Add Strict-Transport-Security: max-age=31536000; includeSubDomains", "Ajoutez Strict-Transport-Security: max-age=31536000; includeSubDomains"),
+    "غياب Content-Security-Policy": ("Missing Content-Security-Policy", "Content-Security-Policy manquant", "أضف CSP مناسباً لموقعك، ابدأ بـ default-src 'self'", "Add a suitable CSP, start with default-src 'self'", "Ajoutez une CSP adaptée, commencez par default-src 'self'"),
+    "CSP ضعيف": ("Weak CSP", "CSP faible", "أزل unsafe-inline/eval واستعمل nonce أو hash", "Remove unsafe-inline/eval, use nonce or hash", "Retirez unsafe-inline/eval, utilisez nonce ou hash"),
+    "خطر Clickjacking": ("Clickjacking risk", "Risque de clickjacking", "أضف X-Frame-Options: DENY أو SAMEORIGIN", "Add X-Frame-Options: DENY or SAMEORIGIN", "Ajoutez X-Frame-Options: DENY ou SAMEORIGIN"),
+    "غياب nosniff": ("Missing nosniff", "nosniff manquant", "أضف X-Content-Type-Options: nosniff", "Add X-Content-Type-Options: nosniff", "Ajoutez X-Content-Type-Options: nosniff"),
+    "غياب Referrer-Policy": ("Missing Referrer-Policy", "Referrer-Policy manquant", "أضف Referrer-Policy مناسباً", "Add a suitable Referrer-Policy", "Ajoutez un Referrer-Policy adapté"),
+    "غياب Permissions-Policy": ("Missing Permissions-Policy", "Permissions-Policy manquant", "أضف Permissions-Policy مناسباً", "Add a suitable Permissions-Policy", "Ajoutez un Permissions-Policy adapté"),
+    "الخادم يكشف إصداره": ("Server discloses its version", "Le serveur révèle sa version", "أخفِ رقم الإصدار من رأس Server", "Hide the version number from the Server header", "Masquez le numéro de version de l'en-tête Server"),
+    "كشف التقنية X-Powered-By": ("Technology disclosed (X-Powered-By)", "Technologie révélée (X-Powered-By)", "أزل رأس X-Powered-By", "Remove the X-Powered-By header", "Retirez l'en-tête X-Powered-By"),
+    "كوكيز بدون حماية كاملة": ("Cookies without full protection", "Cookies sans protection complète", "أضف Secure و HttpOnly و SameSite=Lax للكوكيز", "Add Secure, HttpOnly and SameSite=Lax to cookies", "Ajoutez Secure, HttpOnly et SameSite=Lax aux cookies"),
+    "كوكيز بدون SameSite": ("Cookies without SameSite", "Cookies sans SameSite", "أضف SameSite=Lax أو Strict", "Add SameSite=Lax or Strict", "Ajoutez SameSite=Lax ou Strict"),
+    "محتوى مختلط Mixed Content": ("Mixed content", "Contenu mixte", "حوّل كل الموارد إلى https أو روابط نسبية", "Move all resources to https or relative URLs", "Passez toutes les ressources en https ou en URL relatives"),
+    "لا يوجد security.txt": ("No security.txt", "Pas de security.txt", "أضف /.well-known/security.txt مع بريد للتواصل الأمني", "Add /.well-known/security.txt with a security contact email", "Ajoutez /.well-known/security.txt avec un e-mail de contact sécurité"),
+}
+
+
+def t(key):
+    """ترجمة مفتاح واجهة حسب اللغة الحالية (افتراضياً العربية)."""
+    return STR.get(key, {}).get(LANG, STR.get(key, {}).get("ar", key))
+
+
+def set_lang(code):
+    global LANG
+    code = (code or "").strip().lower()
+    if code in ("en", "english"):
+        LANG = "en"
+    elif code in ("fr", "francais", "français"):
+        LANG = "fr"
+    elif code in ("ar", "arabic", "العربية", "عربي"):
+        LANG = "ar"
+    else:
+        return False
+    return True
+
+
+def out(line=""):
+    """طباعة سطر: في العربية يبدأ بعلامة RTL حتى يظهر من اليمين لليسار."""
+    if LANG == "ar" and line:
+        print(RLM + line)
+    else:
+        print(line)
+
+
+def ar_align(line, width=56):
+    """في العربية: محاذاة لليمين لمحاكاة اتجاه RTL في الطرفية."""
+    if LANG == "ar":
+        return line.rjust(width)
+    return line
+
 
 # ألوان ANSI (تعمل في Termux). تُلغى تلقائياً مع --json.
 _USE_COLOR = sys.stdout.isatty()
@@ -69,108 +275,285 @@ C_RED = lambda s: _c("91") + s + _c("0")  # noqa: E731
 
 
 def show_banner():
-    print(C_CYAN("=" * 55))
-    print(C_BOLD("   🔍  CONAN  DETECTIVE  —  المحقق كونان"))
-    print(C_CYAN("   نظام فحص أمان قوي لمواقع الويب  |  الإصدار " + VERSION))
-    print("   " + SYSTEM_TAGLINE)
-    print(C_CYAN("=" * 55))
-    print("   المطور: " + C_GREEN(DEVELOPER_NAME) + "  •  " + DEVELOPER_COUNTRY)
-    print("   GitHub: " + DEVELOPER_GITHUB + "  •  يعمل بقوة 💪")
-    print(C_CYAN("-" * 55))
+    # بانر بأسلوب Metasploit: إطار + عدد الفحوصات + المطور
+    print(C_CYAN("=" * 60))
+    print(C_BOLD("   ____ ___  _   _    _    _   _"))
+    print(C_BOLD("  / ___/ _ \\| \\ | |  / \\  | \\ | |"))
+    print(C_BOLD(" | |  | | | |  \\| | / _ \\ |  \\| |   DETECTIVE"))
+    print(C_BOLD(" | |__| |_| | |\\  |/ ___ \\| |\\  |   المحقق كونان"))
+    print(C_BOLD("  \\____\\___/|_| \\_/_/   \\_\\_| \\_|"))
+    print(C_CYAN("   Conan Framework v" + VERSION + "  •  " + t("subtitle")))
+    print("   " + t("checks_line"))
+    print(C_CYAN("=" * 60))
+    out("   " + t("developer") + ": " + DEVELOPER_NAME + "  •  " + DEVELOPER_COUNTRY)
+    out("   GitHub: " + DEVELOPER_GITHUB + "  •  " + t("works_strong") + " 💪")
+    print(C_CYAN("-" * 60))
+    out("   " + t("type_help"))
+
+
+ABOUT_TOOL = {
+    "en": [
+        "Defensive passive security audit system, running in Termux",
+        "with Python only — no external library.",
+        "",
+        "What it does:",
+        "  1. Checks DNS, IP and Reverse DNS",
+        "  2. Fetches public WHOIS: registrar, dates, name servers",
+        "     and publicly disclosed owner data only",
+        "  3. Checks HTTPS, TLS certificate, security headers, cookies",
+        "  4. Detects server version, visible tech and public files",
+        "  5. Gives a summary, a score out of 100, a grade, and a list",
+        "     of weaknesses (missing settings) ranked by severity,",
+        "     each with a fix.",
+        "",
+        "What it does NOT do:",
+        "  No exploitation, no payloads, no password guessing,",
+        "  no login and no bypassing any protection.",
+        "",
+        "Golden rule: use it only on your own site",
+        "or on a site you have written permission to audit.",
+    ],
+    "fr": [
+        "Système d'audit de sécurité défensif et passif, sous Termux",
+        "avec Python seulement — aucune bibliothèque externe.",
+        "",
+        "Ce qu'il fait :",
+        "  1. Vérifie DNS, IP et Reverse DNS",
+        "  2. Récupère le WHOIS public : bureau, dates, serveurs de noms",
+        "     et données du propriétaire divulguées publiquement seulement",
+        "  3. Vérifie HTTPS, certificat TLS, en-têtes de sécurité, cookies",
+        "  4. Détecte la version du serveur, la tech visible et les fichiers publics",
+        "  5. Donne un résumé, un score sur 100, une note, et une liste",
+        "     de faiblesses (réglages manquants) classées par gravité,",
+        "     chacune avec un correctif.",
+        "",
+        "Ce qu'il ne fait PAS :",
+        "  Aucun exploit, aucune charge utile, aucune devinette de mot de passe,",
+        "  aucune connexion et aucun contournement de protection.",
+        "",
+        "Règle d'or : utilisez-le uniquement sur votre propre site",
+        "ou sur un site avec une autorisation écrite d'audit.",
+    ],
+    "ar": [
+        "نظام فحص أمان دفاعي سلبي (Passive) يعمل في Termux",
+        "ببايثون فقط، بدون أي مكتبة خارجية.",
+        "",
+        "ماذا يفعل؟",
+        "  1. يفحص DNS و IP و Reverse DNS",
+        "  2. يجلب WHOIS العام: المسجل وتواريخ النطاق وخوادم الأسماء",
+        "     وبيانات المالك الظاهرة علناً فقط",
+        "  3. يفحص HTTPS وشهادة TLS والرؤوس الأمنية والكوكيز",
+        "  4. يكشف إصدار الخادم والتقنية الظاهرة والملفات العامة",
+        "  5. يعطيك ملخصاً ونسبة من 100 وتقييماً، وقائمة ثغرات",
+        "     (إعدادات ناقصة) مرتبة حسب الخطورة مع إصلاح لكل واحدة",
+        "",
+        "ماذا لا يفعل؟",
+        "  لا يستغل أي ثغرة، لا يرسل حمولات، لا يجرب كلمات مرور،",
+        "  ولا يسجل الدخول أو يتجاوز أي حماية.",
+        "",
+        "القاعدة الذهبية: استعمله فقط على موقعك الخاص",
+        "أو موقع عندك إذن كتابي لفحصه.",
+    ],
+}
+
+ABOUT_DEV = {
+    "en": [
+        "Name: " + DEVELOPER_NAME,
+        "Country: Algeria 🇩🇿",
+        "GitHub: " + DEVELOPER_GITHUB,
+        "Project: " + TOOL_NAME + " v" + VERSION,
+        "",
+        "A developer from Algeria, works strong 💪",
+        "He builds practical tools that really work in Termux,",
+        "with clean code, no complexity and no false promises:",
+        "what works is said to work, what does not is said honestly.",
+    ],
+    "fr": [
+        "Nom : " + DEVELOPER_NAME,
+        "Pays : Algérie 🇩🇿",
+        "GitHub : " + DEVELOPER_GITHUB,
+        "Projet : " + TOOL_NAME + " v" + VERSION,
+        "",
+        "Un développeur d'Algérie, travaille fort 💪",
+        "Il construit des outils pratiques qui fonctionnent vraiment sous Termux,",
+        "avec un code propre, sans complexité et sans fausses promesses :",
+        "ce qui fonctionne est dit fonctionner, sinon c'est dit honnêtement.",
+    ],
+    "ar": [
+        "الاسم: " + DEVELOPER_NAME,
+        "البلد: الجزائر 🇩🇿",
+        "GitHub: " + DEVELOPER_GITHUB,
+        "المشروع: " + TOOL_NAME + " v" + VERSION,
+        "",
+        "مطور من الجزائر، يعمل بقوة 💪",
+        "يبني أدوات عملية تشتغل فعلاً في Termux،",
+        "بكود نظيف، وبدون تعقيد، وبدون وعود وهمية:",
+        "ما يشتغل يقال إنه يشتغل، وما لا يشتغل يقال بصراحة.",
+    ],
+}
 
 
 def show_about_tool():
-    print("\n" + "=" * 55)
-    print("📖 عن الأداة — " + TOOL_NAME + " v" + VERSION)
-    print("=" * 55)
-    print("نظام فحص أمان دفاعي سلبي (Passive) يعمل في Termux")
-    print("ببايثون فقط، بدون أي مكتبة خارجية.")
-    print("\nماذا يفعل؟")
-    print("  1. يفحص DNS و IP و Reverse DNS")
-    print("  2. يجلب WHOIS العام: المسجل وتواريخ النطاق وخوادم الأسماء")
-    print("     وبيانات المالك الظاهرة علناً فقط")
-    print("  3. يفحص HTTPS وشهادة TLS والرؤوس الأمنية والكوكيز")
-    print("  4. يكشف إصدار الخادم والتقنية الظاهرة والملفات العامة")
-    print("  5. يعطيك ملخصاً ونسبة من 100 وتقييماً، وقائمة ثغرات")
-    print("     (إعدادات ناقصة) مرتبة حسب الخطورة مع إصلاح لكل واحدة")
-    print("\nماذا لا يفعل؟")
-    print("  لا يستغل أي ثغرة، لا يرسل حمولات، لا يجرب كلمات مرور،")
-    print("  ولا يسجل الدخول أو يتجاوز أي حماية.")
-    print("\nالقاعدة الذهبية: استعمله فقط على موقعك الخاص")
-    print("أو موقع عندك إذن كتابي لفحصه.")
-    print("=" * 55)
+    print("\n" + "=" * 60)
+    out("📖 " + t("about_tool_title") + " — " + TOOL_NAME + " v" + VERSION)
+    print("=" * 60)
+    for line in ABOUT_TOOL.get(LANG, ABOUT_TOOL["ar"]):
+        out(line)
+    print("=" * 60)
 
 
 def show_about_developer():
-    print("\n" + "=" * 55)
-    print("👨‍💻 عن المطور")
-    print("=" * 55)
-    print("الاسم: " + DEVELOPER_NAME)
-    print("البلد: " + DEVELOPER_COUNTRY)
-    print("GitHub: " + DEVELOPER_GITHUB)
-    print("المشروع: " + TOOL_NAME + " v" + VERSION)
-    print("\nمطور من الجزائر، يعمل بقوة 💪")
-    print("يبني أدوات عملية تشتغل فعلاً في Termux،")
-    print("بكود نظيف، وبدون تعقيد، وبدون وعود وهمية:")
-    print("ما يشتغل يقال إنه يشتغل، وما لا يشتغل يقال بصراحة.")
-    print("=" * 55)
+    print("\n" + "=" * 60)
+    out("👨‍💻 " + t("about_dev_title"))
+    print("=" * 60)
+    for line in ABOUT_DEV.get(LANG, ABOUT_DEV["ar"]):
+        out(line)
+    print("=" * 60)
+
+
+def choose_language():
+    """اختيار اللغة عند البدء: 1 English / 2 Français / 3 العربية (افتراضي)."""
+    print("\n" + "=" * 60)
+    print("  Choose language  •  Choisissez la langue  •  اختر اللغة")
+    print("  [1] English")
+    print("  [2] Français")
+    print("  [3] العربية  (RTL — من اليمين لليسار)")
+    print("=" * 60)
+    try:
+        choice = input("  [1/2/3] (default 3): ").strip()
+    except (EOFError, KeyboardInterrupt):
+        return
+    if choice == "1":
+        set_lang("en")
+    elif choice == "2":
+        set_lang("fr")
+    else:
+        set_lang("ar")
+
+
+def show_help():
+    print("\n" + "=" * 60)
+    out("📖 " + t("help_title") + " — conan >")
+    print("=" * 60)
+    cmds = {
+        "en": [
+            "  scan <url>        Scan a website (e.g. scan https://example.com)",
+            "  set target <url>  Set the target, then type: run",
+            "  run               Scan the current target",
+            "  about             About the tool",
+            "  developer         About the developer",
+            "  lang <en|fr|ar>   Switch language",
+            "  banner            Show the banner again",
+            "  clear             Clear the screen",
+            "  help              Show this help",
+            "  exit / quit       Exit the console",
+        ],
+        "fr": [
+            "  scan <url>        Analyser un site (ex. scan https://example.com)",
+            "  set target <url>  Définir la cible, puis tapez : run",
+            "  run               Analyser la cible actuelle",
+            "  about             À propos de l'outil",
+            "  developer         À propos du développeur",
+            "  lang <en|fr|ar>   Changer de langue",
+            "  banner            Réafficher la bannière",
+            "  clear             Effacer l'écran",
+            "  help              Afficher cette aide",
+            "  exit / quit       Quitter la console",
+        ],
+        "ar": [
+            "  scan <url>        فحص موقع (مثال: scan https://example.com)",
+            "  set target <url>  تعيين الهدف، ثم اكتب: run",
+            "  run               فحص الهدف الحالي",
+            "  about             عن الأداة",
+            "  developer         عن المطور",
+            "  lang <en|fr|ar>   تغيير اللغة",
+            "  banner            عرض البانر من جديد",
+            "  clear             مسح الشاشة",
+            "  help              عرض هذه المساعدة",
+            "  exit / quit       الخروج من وحدة التحكم",
+        ],
+    }
+    for line in cmds.get(LANG, cmds["ar"]):
+        out(line)
+    print("=" * 60)
+
+
+def _do_scan(raw):
+    if not raw:
+        out(t("no_url"))
+        return
+    out(t("scanning"))
+    report = run_check(raw)
+    print_report(report)
+    try:
+        save = input(t("save_q")).strip().lower()
+    except (EOFError, KeyboardInterrupt):
+        save = ""
+    if save in ("y", "yes", "o", "oui", "نعم"):
+        fname = "conan-report.json"
+        with open(fname, "w", encoding="utf-8") as f:
+            json.dump(report, f, ensure_ascii=False, indent=2)
+        out(t("saved") + fname)
+
+
+def msf_console():
+    """وحدة تحكم بأسلوب Metasploit: موجه conan > وأوامر نصية."""
+    target = ""
+    show_banner()
+    while True:
+        try:
+            line = input("\n" + C_RED("conan") + " > ").strip()
+        except (EOFError, KeyboardInterrupt):
+            out("\n" + t("goodbye"))
+            return 0
+        if not line:
+            continue
+        parts = line.split(None, 1)
+        cmd = parts[0].lower()
+        arg = parts[1].strip() if len(parts) > 1 else ""
+        if cmd in ("exit", "quit", "q"):
+            out(t("goodbye") + " — " + TOOL_NAME)
+            return 0
+        if cmd in ("help", "?", "h"):
+            show_help()
+        elif cmd == "banner":
+            show_banner()
+        elif cmd == "clear":
+            print("\033[2J\033[H", end="")
+            show_banner()
+        elif cmd in ("version", "ver"):
+            out(TOOL_NAME + " v" + VERSION)
+        elif cmd == "about":
+            show_about_tool()
+        elif cmd in ("developer", "author", "dev"):
+            show_about_developer()
+        elif cmd in ("lang", "language"):
+            if set_lang(arg):
+                out(t("lang_set"))
+                show_banner()
+            else:
+                out(t("lang_bad"))
+        elif cmd in ("scan", "check"):
+            _do_scan(arg)
+        elif cmd == "set":
+            sub = arg.split(None, 1)
+            if len(sub) == 2 and sub[0].lower() in ("target", "url"):
+                target = sub[1].strip()
+                out(t("target_set") + target)
+            else:
+                out(t("unknown_cmd"))
+        elif cmd == "run":
+            if not target:
+                out(t("no_target"))
+            else:
+                _do_scan(target)
+        else:
+            out(t("unknown_cmd"))
 
 
 def interactive_menu():
-    """الواجهة التفاعلية: حلقة قائمة حتى يختار المستخدم الخروج."""
-    while True:
-        show_banner()
-        print("\n  [1] 🔍  فحص موقع")
-        print("  [2] 📖  عن الأداة")
-        print("  [3] 👨‍💻  عن المطور")
-        print("  [0] 🚪  خروج")
-        try:
-            choice = input("\nاختر رقماً: ").strip()
-        except (EOFError, KeyboardInterrupt):
-            print("\nمع السلامة 👋")
-            return 0
-        if choice == "1":
-            try:
-                raw = input("ادخل رابط الموقع (مثال: https://example.com): ").strip()
-            except (EOFError, KeyboardInterrupt):
-                print("\nألغيت.")
-                continue
-            if not raw:
-                print("لم تدخل رابطاً.")
-                continue
-            print("\nجارٍ الفحص... 🔎")
-            report = run_check(raw)
-            print_report(report)
-            try:
-                save = input("\nهل تريد حفظ التقرير JSON؟ (y/N): ").strip().lower()
-            except (EOFError, KeyboardInterrupt):
-                save = ""
-            if save in ("y", "yes", "نعم"):
-                fname = "conan-تقرير.json"
-                with open(fname, "w", encoding="utf-8") as f:
-                    json.dump(report, f, ensure_ascii=False, indent=2)
-                print("تم الحفظ في:", fname)
-            try:
-                input("\nاضغط Enter للعودة للقائمة...")
-            except (EOFError, KeyboardInterrupt):
-                pass
-        elif choice == "2":
-            show_about_tool()
-            try:
-                input("\nاضغط Enter للعودة للقائمة...")
-            except (EOFError, KeyboardInterrupt):
-                pass
-        elif choice == "3":
-            show_about_developer()
-            try:
-                input("\nاضغط Enter للعودة للقائمة...")
-            except (EOFError, KeyboardInterrupt):
-                pass
-        elif choice == "0":
-            print("\nمع السلامة 👋 — " + TOOL_NAME)
-            return 0
-        else:
-            print("اختيار غير صحيح، جرّب 1 أو 2 أو 3 أو 0.")
+    """توافق قديم: الواجهة التفاعلية الآن هي وحدة تحكم Metasploit."""
+    return msf_console()
 
 
 # ---------- أدوات مساعدة ----------
@@ -567,8 +950,9 @@ def run_check(target_url):
     top_fixes = [v["fix"] for v in vulns_sorted[:3]]
 
     report = {
-        "tool": "Conan Detective 2.1 - المحقق كونان",
+        "tool": "Conan Detective 2.2 - المحقق كونان",
         "version": VERSION,
+        "language": LANG,
         "developer": DEVELOPER_NAME,
         "developer_country": "Algeria - الجزائر",
         "target": url,
@@ -594,74 +978,103 @@ def run_check(target_url):
     return report
 
 
+def _tr_check(name):
+    if LANG == "ar":
+        return name
+    m = CHECK_TR.get(name, {})
+    return m.get(LANG, name)
+
+
+def _tr_vuln(v):
+    """ترجمة عنوان الثغرة وإصلاحها حسب اللغة (التفاصيل التقنية تبقى كما هي)."""
+    if LANG == "ar":
+        return v["severity"], v["title"], v["fix"]
+    sev = SEV_TR.get(v["severity"], {}).get(LANG, v["severity"])
+    tr = VULN_TR.get(v["title"])
+    if not tr:
+        return sev, v["title"], v["fix"]
+    # tr = (en_title, fr_title, ar_fix, en_fix, fr_fix)
+    title = tr[0] if LANG == "en" else tr[1]
+    fix = tr[3] if LANG == "en" else tr[4]
+    return sev, title, fix
+
+
 def print_report(r):
-    print("=" * 55)
-    print("🔍 المحقق كونان - تقرير فحص أمان الموقع")
-    print("الموقع:", r["target"])
+    print("=" * 60)
+    out("🔍 " + TOOL_NAME + " — " + t("report_title"))
+    out("Target: " + r["target"] if LANG != "ar" else "الموقع: " + r["target"])
     if r["final_url"] != r["target"]:
-        print("الوجهة النهائية:", r["final_url"])
-    print("التاريخ (UTC):", r["checked_at_utc"])
-    print("=" * 55)
+        out(t("final_url") + ": " + r["final_url"])
+    out(t("date") + ": " + r["checked_at_utc"])
+    print("=" * 60)
 
-    print("\n--- 👤 معلومات المالك والنطاق (WHOIS عام) ---")
+    out("\n--- 👤 " + t("owner_section") + " ---")
     w = r["whois"]
-    print("النطاق:", w["domain"])
-    print("المسجل:", w["registrar"] or "غير ظاهر / محجوب")
-    print("تاريخ الإنشاء:", w["created"] or "-")
-    print("تاريخ الانتهاء:", w["expires"] or "-")
-    print("المنظمة المسجلة:", w["org"] or "محجوبة للخصوصية أو غير معلنة")
-    print("البلد:", w["country"] or "-")
-    print("خوادم الأسماء:", ", ".join(w["nameservers"]) if w["nameservers"] else "-")
+    out(t("domain") + ": " + w["domain"])
+    out(t("registrar") + ": " + (w["registrar"] or t("hidden")))
+    out(t("created") + ": " + (w["created"] or "-"))
+    out(t("expires") + ": " + (w["expires"] or "-"))
+    out(t("org") + ": " + (w["org"] or t("hidden")))
+    out(t("nameservers") + ": " + (", ".join(w["nameservers"]) if w["nameservers"] else "-"))
     if w["raw_note"]:
-        print("ملاحظة:", w["raw_note"])
+        out(w["raw_note"])
 
-    print("\n--- 🌐 DNS والشبكة ---")
-    print("IP:", ", ".join(r["dns"]["ips"]) if r["dns"]["ips"] else "تعذر الحل")
+    out("\n--- 🌐 " + t("dns_section") + " ---")
+    out("IP: " + (", ".join(r["dns"]["ips"]) if r["dns"]["ips"] else "-"))
     if r["dns"]["reverse"]:
-        print("Reverse DNS:", r["dns"]["reverse"])
-    print("TLS:", r["tls"]["version"] or "-", "| الجهة:", r["tls"]["issuer"] or "-", "| ينتهي بعد:", ("%d يوماً" % r["tls"]["days_left"]) if r["tls"]["days_left"] is not None else "-")
+        out("Reverse DNS: " + r["dns"]["reverse"])
+    out("TLS: " + (r["tls"]["version"] or "-") + " | " + (r["tls"]["issuer"] or "-") + " | " + (("%d" % r["tls"]["days_left"]) if r["tls"]["days_left"] is not None else "-"))
     if r["tech_hints"]:
-        print("تقنية ظاهرة:", " | ".join(r["tech_hints"]))
+        out(" | ".join(r["tech_hints"]))
 
-    print("\n--- ✅ نتائج الفحص ---")
+    out("\n--- ✅ " + t("checks_section") + " ---")
     for c in r["checks"]:
         mark = "✔" if c["passed"] else "✘"
-        print(" %s %s : %d/%d - %s" % (mark, c["name"], c["points"] if c["passed"] else 0, c["points"], c["detail"]))
+        out(" %s %s : %d/%d - %s" % (mark, _tr_check(c["name"]), c["points"] if c["passed"] else 0, c["points"], c["detail"]))
 
     if r["infos"]:
-        print("\n--- ℹ️ ملاحظات ---")
+        out("\n--- ℹ️ " + t("notes_section") + " ---")
         for info in r["infos"]:
-            print(" -", info)
+            out(" - " + info)
 
-    print("\n--- ⚠️ الثغرات / نقاط الضعف (%d) ---" % len(r["vulnerabilities"]))
-    print("عالي: %d | متوسط: %d | منخفض: %d" % (r["counts"]["عالي"], r["counts"]["متوسط"], r["counts"]["منخفض"]))
+    out("\n--- ⚠️ " + t("vulns_section") + " (%d) ---" % len(r["vulnerabilities"]))
+    sev_h = SEV_TR["عالي"].get(LANG, "عالي")
+    sev_m = SEV_TR["متوسط"].get(LANG, "متوسط")
+    sev_l = SEV_TR["منخفض"].get(LANG, "منخفض")
+    out("%s: %d | %s: %d | %s: %d" % (sev_h, r["counts"]["عالي"], sev_m, r["counts"]["متوسط"], sev_l, r["counts"]["منخفض"]))
     if not r["vulnerabilities"]:
-        print(" لا توجد نقاط ضعف ظاهرة في هذا الفحص السلبي. ممتاز!")
+        out(" " + t("no_vulns"))
     for v in r["vulnerabilities"]:
-        print("\n [%s] %s" % (v["severity"], v["title"]))
-        print("   التفاصيل:", v["detail"])
-        print("   الإصلاح:", v["fix"])
+        sev, title, fix = _tr_vuln(v)
+        out("\n [%s] %s" % (sev, title))
+        out("   " + t("details") + " " + v["detail"])
+        out("   " + t("fix") + " " + fix)
 
-    print("\n" + "=" * 55)
-    print("📊 الملخص: نسبة الأمان %d%%" % r["score"])
-    print("التقييم:", r["grade"])
-    if r["top_fixes"]:
-        print("أول 3 إصلاحات:")
-        for i, f in enumerate(r["top_fixes"], 1):
-            print(" %d. %s" % (i, f))
-    print("=" * 55)
-    print("تنبيه: هذا فحص سلبي للإعدادات الظاهرة فقط، وليس ضماناً كاملاً للأمان.")
-    print("المطور: %s — %s  •  يعمل بقوة 💪" % (DEVELOPER_NAME, DEVELOPER_COUNTRY))
+    print("\n" + "=" * 60)
+    out("📊 " + t("summary") + ": " + t("score") + " %d%%" % r["score"])
+    out(t("grade") + ": " + r["grade"])
+    if r["vulnerabilities"]:
+        out(t("top_fixes"))
+        for i, v in enumerate(r["vulnerabilities"][:3], 1):
+            _sev, _title, _fix = _tr_vuln(v)
+            out(" %d. %s" % (i, _fix))
+    print("=" * 60)
+    out(t("warning"))
+    out(t("developer") + ": " + DEVELOPER_NAME + " — " + DEVELOPER_COUNTRY + "  •  " + t("works_strong") + " 💪")
 
 
 def main():
-    ap = argparse.ArgumentParser(description="المحقق كونان - فحص أمان دفاعي سلبي")
+    ap = argparse.ArgumentParser(description="المحقق كونان - فحص أمان دفاعي سلبي | Conan Detective - Metasploit-style console, en/fr/ar")
     ap.add_argument("url", nargs="?", help="رابط الموقع مثال https://example.com")
     ap.add_argument("--json", action="store_true", help="إخراج JSON فقط")
     ap.add_argument("-o", "--output", help="حفظ التقرير JSON في ملف")
     ap.add_argument("--about", action="store_true", help="عرض معلومات عن الأداة فقط")
     ap.add_argument("--developer", action="store_true", help="عرض معلومات عن المطور فقط")
+    ap.add_argument("--lang", choices=["en", "fr", "ar"], default=None, help="Language: en / fr / ar (Arabic RTL)")
     args = ap.parse_args()
+
+    if args.lang:
+        set_lang(args.lang)
 
     # أوضاع العرض المباشر — بدون فحص
     if args.about:
@@ -673,9 +1086,11 @@ def main():
         show_about_developer()
         return 0
 
-    # بدون رابط: الواجهة التفاعلية
+    # بدون رابط: اختيار اللغة ثم وحدة تحكم بأسلوب Metasploit
     if not args.url:
-        return interactive_menu()
+        if not args.lang:
+            choose_language()
+        return msf_console()
 
     # مع رابط: فحص مباشر (يحافظ على التوافق مع الأوامر القديمة)
     if not args.json:
