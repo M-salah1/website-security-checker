@@ -1,8 +1,11 @@
-# Website Security Checker — المحقق كونان
+# Website Security Checker — المحقق كونان v2.1
 
-أداة فحص أمان دفاعية سلبية لموقع ويب، تعمل في Termux ببايثون فقط (بدون مكتبات إضافية).
+نظام فحص أمان قوي لمواقع الويب، يعمل في Termux ببايثون فقط (بدون مكتبات إضافية).
 لا تحاول الأداة اختراق الموقع أو تسجيل الدخول أو تجاوز أي حماية.
 استعملها فقط على موقعك الخاص أو موقع عندك إذن كتابي لفحصه.
+
+**المطور: Hafed Mehdi Salaj Eddine — الجزائر 🇩🇿 — يعمل بقوة 💪**
+GitHub: M-salah1
 
 ## الأداة الرئيسية: `conan.py` — المحقق كونان
 
@@ -15,22 +18,29 @@
 - كشف إصدار الخادم والتقنية الظاهرة، وملفات robots.txt / sitemap.xml / security.txt، والمحتوى المختلط
 - ملخص + نسبة من 100 + تقييم، وقائمة ثغرات (إعدادات ناقصة) مرتبة عالي / متوسط / منخفض مع توصية إصلاح لكل واحدة
 
-## التشغيل في Termux
+## التشغيل في Termux — الواجهة التفاعلية
 
 ```bash
 pkg update && pkg install -y python git
 git clone https://github.com/M-salah1/website-security-checker.git
 cd website-security-checker
-python3 conan.py https://example.com
+python3 conan.py
 ```
 
-خيارات:
+تفتح لك الواجهة القوية:
+- **[1] فحص موقع** — اكتب الرابط ويعطيك التقرير الكامل، مع خيار حفظ JSON
+- **[2] عن الأداة** — تعريف كامل بالنظام وما يفحص وما لا يفعل
+- **[3] عن المطور** — Hafed Mehdi Salaj Eddine من الجزائر
+- **[0] خروج**
+
+أو فحص مباشر بدون قائمة:
 
 ```bash
+python3 conan.py https://example.com
 python3 conan.py https://example.com --json
 python3 conan.py https://example.com -o تقرير.json
-python3 conan.py
-# ثم اكتب الرابط عندما تسألك الأداة
+python3 conan.py --about
+python3 conan.py --developer
 ```
 
 ## الأداة البسيطة: `security_check.py`

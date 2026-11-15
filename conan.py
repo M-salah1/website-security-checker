@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-المحقق كونان - Conan Detective
+المحقق كونان - Conan Detective v2.1
 أداة فحص أمان دفاعية سلبية (Passive) لمواقع الويب - Termux
 Python standard library فقط، بدون تثبيت مكتبات.
+المطور: Hafed Mehdi Salaj Eddine — الجزائر
 
 ماذا تفحص؟
   1. DNS والعنوان IP والـ Reverse DNS
@@ -24,10 +25,13 @@ Python standard library فقط، بدون تثبيت مكتبات.
   وليست إثبات استغلال.
 
 الاستعمال - استعملها فقط على موقعك الخاص أو موقع عندك إذن كتابي لفحصه:
+    python3 conan.py                        # واجهة تفاعلية: قائمة، عن الأداة، عن المطور
     python3 conan.py https://example.com
     python3 conan.py example.com
     python3 conan.py https://example.com --json
     python3 conan.py https://example.com -o تقرير.json
+    python3 conan.py --about               # عن الأداة فقط
+    python3 conan.py --developer            # عن المطور فقط
 """
 
 import argparse
@@ -40,6 +44,133 @@ import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+
+
+VERSION = "2.1"
+TOOL_NAME = "المحقق كونان - Conan Detective"
+DEVELOPER_NAME = "Hafed Mehdi Salaj Eddine"
+DEVELOPER_COUNTRY = "الجزائر 🇩🇿"
+DEVELOPER_GITHUB = "M-salah1"
+SYSTEM_TAGLINE = "نظام فحص قوي — دقيق، سريع، ويعمل بقوة"
+
+# ألوان ANSI (تعمل في Termux). تُلغى تلقائياً مع --json.
+_USE_COLOR = sys.stdout.isatty()
+
+
+def _c(code):
+    return "\033[%sm" % code if _USE_COLOR else ""
+
+
+C_BOLD = lambda s: _c("1") + s + _c("0")  # noqa: E731
+C_CYAN = lambda s: _c("96") + s + _c("0")  # noqa: E731
+C_GREEN = lambda s: _c("92") + s + _c("0")  # noqa: E731
+C_YELLOW = lambda s: _c("93") + s + _c("0")  # noqa: E731
+C_RED = lambda s: _c("91") + s + _c("0")  # noqa: E731
+
+
+def show_banner():
+    print(C_CYAN("=" * 55))
+    print(C_BOLD("   🔍  CONAN  DETECTIVE  —  المحقق كونان"))
+    print(C_CYAN("   نظام فحص أمان قوي لمواقع الويب  |  الإصدار " + VERSION))
+    print("   " + SYSTEM_TAGLINE)
+    print(C_CYAN("=" * 55))
+    print("   المطور: " + C_GREEN(DEVELOPER_NAME) + "  •  " + DEVELOPER_COUNTRY)
+    print("   GitHub: " + DEVELOPER_GITHUB + "  •  يعمل بقوة 💪")
+    print(C_CYAN("-" * 55))
+
+
+def show_about_tool():
+    print("\n" + "=" * 55)
+    print("📖 عن الأداة — " + TOOL_NAME + " v" + VERSION)
+    print("=" * 55)
+    print("نظام فحص أمان دفاعي سلبي (Passive) يعمل في Termux")
+    print("ببايثون فقط، بدون أي مكتبة خارجية.")
+    print("\nماذا يفعل؟")
+    print("  1. يفحص DNS و IP و Reverse DNS")
+    print("  2. يجلب WHOIS العام: المسجل وتواريخ النطاق وخوادم الأسماء")
+    print("     وبيانات المالك الظاهرة علناً فقط")
+    print("  3. يفحص HTTPS وشهادة TLS والرؤوس الأمنية والكوكيز")
+    print("  4. يكشف إصدار الخادم والتقنية الظاهرة والملفات العامة")
+    print("  5. يعطيك ملخصاً ونسبة من 100 وتقييماً، وقائمة ثغرات")
+    print("     (إعدادات ناقصة) مرتبة حسب الخطورة مع إصلاح لكل واحدة")
+    print("\nماذا لا يفعل؟")
+    print("  لا يستغل أي ثغرة، لا يرسل حمولات، لا يجرب كلمات مرور،")
+    print("  ولا يسجل الدخول أو يتجاوز أي حماية.")
+    print("\nالقاعدة الذهبية: استعمله فقط على موقعك الخاص")
+    print("أو موقع عندك إذن كتابي لفحصه.")
+    print("=" * 55)
+
+
+def show_about_developer():
+    print("\n" + "=" * 55)
+    print("👨‍💻 عن المطور")
+    print("=" * 55)
+    print("الاسم: " + DEVELOPER_NAME)
+    print("البلد: " + DEVELOPER_COUNTRY)
+    print("GitHub: " + DEVELOPER_GITHUB)
+    print("المشروع: " + TOOL_NAME + " v" + VERSION)
+    print("\nمطور من الجزائر، يعمل بقوة 💪")
+    print("يبني أدوات عملية تشتغل فعلاً في Termux،")
+    print("بكود نظيف، وبدون تعقيد، وبدون وعود وهمية:")
+    print("ما يشتغل يقال إنه يشتغل، وما لا يشتغل يقال بصراحة.")
+    print("=" * 55)
+
+
+def interactive_menu():
+    """الواجهة التفاعلية: حلقة قائمة حتى يختار المستخدم الخروج."""
+    while True:
+        show_banner()
+        print("\n  [1] 🔍  فحص موقع")
+        print("  [2] 📖  عن الأداة")
+        print("  [3] 👨‍💻  عن المطور")
+        print("  [0] 🚪  خروج")
+        try:
+            choice = input("\nاختر رقماً: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\nمع السلامة 👋")
+            return 0
+        if choice == "1":
+            try:
+                raw = input("ادخل رابط الموقع (مثال: https://example.com): ").strip()
+            except (EOFError, KeyboardInterrupt):
+                print("\nألغيت.")
+                continue
+            if not raw:
+                print("لم تدخل رابطاً.")
+                continue
+            print("\nجارٍ الفحص... 🔎")
+            report = run_check(raw)
+            print_report(report)
+            try:
+                save = input("\nهل تريد حفظ التقرير JSON؟ (y/N): ").strip().lower()
+            except (EOFError, KeyboardInterrupt):
+                save = ""
+            if save in ("y", "yes", "نعم"):
+                fname = "conan-تقرير.json"
+                with open(fname, "w", encoding="utf-8") as f:
+                    json.dump(report, f, ensure_ascii=False, indent=2)
+                print("تم الحفظ في:", fname)
+            try:
+                input("\nاضغط Enter للعودة للقائمة...")
+            except (EOFError, KeyboardInterrupt):
+                pass
+        elif choice == "2":
+            show_about_tool()
+            try:
+                input("\nاضغط Enter للعودة للقائمة...")
+            except (EOFError, KeyboardInterrupt):
+                pass
+        elif choice == "3":
+            show_about_developer()
+            try:
+                input("\nاضغط Enter للعودة للقائمة...")
+            except (EOFError, KeyboardInterrupt):
+                pass
+        elif choice == "0":
+            print("\nمع السلامة 👋 — " + TOOL_NAME)
+            return 0
+        else:
+            print("اختيار غير صحيح، جرّب 1 أو 2 أو 3 أو 0.")
 
 
 # ---------- أدوات مساعدة ----------
@@ -436,7 +567,10 @@ def run_check(target_url):
     top_fixes = [v["fix"] for v in vulns_sorted[:3]]
 
     report = {
-        "tool": "Conan Detective 2.0 - المحقق كونان",
+        "tool": "Conan Detective 2.1 - المحقق كونان",
+        "version": VERSION,
+        "developer": DEVELOPER_NAME,
+        "developer_country": "Algeria - الجزائر",
         "target": url,
         "final_url": final_url,
         "hostname": hostname,
@@ -517,6 +651,7 @@ def print_report(r):
             print(" %d. %s" % (i, f))
     print("=" * 55)
     print("تنبيه: هذا فحص سلبي للإعدادات الظاهرة فقط، وليس ضماناً كاملاً للأمان.")
+    print("المطور: %s — %s  •  يعمل بقوة 💪" % (DEVELOPER_NAME, DEVELOPER_COUNTRY))
 
 
 def main():
@@ -524,15 +659,28 @@ def main():
     ap.add_argument("url", nargs="?", help="رابط الموقع مثال https://example.com")
     ap.add_argument("--json", action="store_true", help="إخراج JSON فقط")
     ap.add_argument("-o", "--output", help="حفظ التقرير JSON في ملف")
+    ap.add_argument("--about", action="store_true", help="عرض معلومات عن الأداة فقط")
+    ap.add_argument("--developer", action="store_true", help="عرض معلومات عن المطور فقط")
     args = ap.parse_args()
 
-    raw = args.url
-    if not raw:
-        raw = input("ادخل رابط الموقع (مثال: https://example.com): ").strip()
-    if not raw:
-        print("لم تدخل رابطاً.")
-        return 1
+    # أوضاع العرض المباشر — بدون فحص
+    if args.about:
+        show_banner()
+        show_about_tool()
+        return 0
+    if args.developer:
+        show_banner()
+        show_about_developer()
+        return 0
 
+    # بدون رابط: الواجهة التفاعلية
+    if not args.url:
+        return interactive_menu()
+
+    # مع رابط: فحص مباشر (يحافظ على التوافق مع الأوامر القديمة)
+    if not args.json:
+        show_banner()
+    raw = args.url
     report = run_check(raw)
 
     if args.output:
