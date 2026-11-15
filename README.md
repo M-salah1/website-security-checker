@@ -1,4 +1,4 @@
-# Website Security Checker — المحقق كونان v2.3
+# Website Security Checker — المحقق كونان v2.4
 
 نظام فحص أمان قوي لمواقع الويب، بواجهة وحدة تحكم بأسلوب Metasploit،
 يعمل في Termux ببايثون فقط (بدون مكتبات إضافية).
@@ -40,7 +40,7 @@ python3 conan.py
    ____ ___  _   _    _    _   _
   / ___/ _ \| \ | |  / \  | \ | |
   ...
-   Conan Framework v2.3  •  12 passive checks  •  0 exploits  •  3 languages
+   Conan Framework v2.4  •  14 passive checks  •  0 exploits  •  3 languages
    Developer: Hafed Mehdi Salah Eddine  •  الجزائر 🇩🇿
 
 conan >
@@ -65,7 +65,7 @@ conan > clear
 conan > exit
 ```
 
-**الجديد في v2.3 — Website Security Intelligence:**
+**الجديد في v2.4 — Website Security Intelligence:**
 - فحص DNSSEC عبر DNS-over-HTTPS، وتحليل شهادات TLS بعمق (التشفير و SANs)
 - تحليل HSTS و CSP بعمق (max-age و includeSubDomains و preload و wildcard)
 - كشف التقنيات سلبياً (WordPress و Laravel و Next.js و Cloudflare...)
@@ -73,6 +73,16 @@ conan > exit
 - الكوكيز: الاسم والأعلام فقط، القيم مخفية دائماً
 - تقارير HTML احترافية + JSON، ومقارنة مع الفحص السابق (`conan-history.json`)
 - تقييم من A+ إلى F
+
+**الجديد في v2.4 — تقارير احترافية وتقييم عادل مبني على الأدلة:**
+- كل فحص له حالة دليل: **مؤكد** أو **غير قابل للتحقق** — غير القابل للتحقق لا يُحسب في الدرجة ولا يُعاقب الموقع (مثل فشل TLS بسبب بروكسي محلي)
+- غياب CSP = طبقة حماية مفقودة (متوسط)، وليس XSS مؤكدة
+- TLS: التحقق من التاريخ والسلسلة؛ إذا تعذر التحقق من السلسلة محلياً تُقرأ الشهادة دون تحقق وتُعلن غير مؤكدة
+- الكوكيز: تحليل كل كوكي على حدة (Secure و HttpOnly و SameSite)
+- **IP Intelligence**: كل عناوين A و AAAA و CNAME و Nameservers و Reverse DNS، مع تمييز IP الوسيط CDN عن الخادم الأصلي (الأصل لا يمكن ضمانه من الفحص العام)
+- فحص الملفات الحساسة المكشوفة علناً (`.env` و `.git/HEAD` وغيرها): تُعرض الأسماء فقط، والقيم مخفية دائماً
+- **تقريران**: Technical Report (تفاصيل كاملة) و Owner Report (شرح مبسط وإصلاح) بصيغ JSON و HTML و **PDF**
+- أدلة إصلاح لكل نتيجة لـ **Apache و Nginx و Laravel**
 
 أو فحص مباشر بدون وحدة تحكم:
 

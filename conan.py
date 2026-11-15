@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-المحقق كونان - Conan Detective v2.3
+المحقق كونان - Conan Detective v2.4
 واجهة بأسلوب Metasploit + 3 لغات (English / Français / العربية RTL)
 أداة فحص أمان دفاعية سلبية (Passive) لمواقع الويب - Termux
 Python standard library فقط، بدون تثبيت مكتبات.
@@ -51,7 +51,7 @@ import urllib.parse
 import urllib.request
 
 
-VERSION = "2.3"
+VERSION = "2.4"
 TOOL_NAME = "المحقق كونان - Conan Detective"
 DEVELOPER_NAME = "Hafed Mehdi Salah Eddine"
 DEVELOPER_COUNTRY = "الجزائر 🇩🇿"
@@ -78,9 +78,9 @@ STR = {
     "developer": {"en": "Developer", "fr": "Développeur", "ar": "المطور"},
     "works_strong": {"en": "works strong", "fr": "travaille fort", "ar": "يعمل بقوة"},
     "checks_line": {
-        "en": "12 passive checks  •  0 exploits  •  3 languages",
-        "fr": "12 vérifications passives  •  0 exploit  •  3 langues",
-        "ar": "12 فحصاً سلبياً  •  0 استغلال  •  3 لغات",
+        "en": "14 passive checks  •  0 exploits  •  3 languages",
+        "fr": "14 vérifications passives  •  0 exploit  •  3 langues",
+        "ar": "14 فحصاً سلبياً  •  0 استغلال  •  3 لغات",
     },
     "type_help": {
         "en": "Type 'help' to see commands.",
@@ -191,6 +191,13 @@ STR = {
     "no_previous": {"en": "No previous scan for this domain — this is the baseline.", "fr": "Aucun scan précédent pour ce domaine — c'est la référence.", "ar": "لا يوجد فحص سابق لهذا النطاق — هذا هو الأساس للمقارنة."},
     "save_fmt": {"en": "Save report? (json/html/both/no): ", "fr": "Enregistrer le rapport ? (json/html/both/no) : ", "ar": "حفظ التقرير؟ (json/html/both/no): "},
     "cipher": {"en": "Cipher", "fr": "Chiffrement", "ar": "التشفير"},
+    "confidence": {"en": "Confidence (verifiable evidence)", "fr": "Confiance (preuves vérifiables)", "ar": "الثقة (الأدلة القابلة للتحقق)"},
+    "ip_section": {"en": "IP Intelligence (public DNS)", "fr": "IP Intelligence (DNS public)", "ar": "استخبارات IP (DNS العام)"},
+    "sensitive_section": {"en": "Publicly exposed sensitive files", "fr": "Fichiers sensibles exposés publiquement", "ar": "ملفات حساسة مكشوفة علناً"},
+    "unverifiable": {"en": "unverifiable here — not counted in the score", "fr": "non vérifiable ici — non compté dans le score", "ar": "غير قابل للتحقق هنا — لا يُحسب في الدرجة"},
+    "origin_note": {"en": "The visible IP is the CDN/proxy IP — the origin server IP cannot be guaranteed from a public scan.", "fr": "L'IP visible est celle du CDN/proxy — l'IP du serveur d'origine ne peut pas être garantie par un scan public.", "ar": "الـ IP الظاهر هو IP الوسيط (CDN/Proxy) — لا يمكن ضمان معرفة IP الخادم الأصلي من الفحص العام."},
+    "owner_report_title": {"en": "Owner Report — simple explanation & fixes", "fr": "Rapport propriétaire — explication simple et correctifs", "ar": "تقرير صاحب الموقع — شرح مبسط وطريقة الإصلاح"},
+    "save_fmt": {"en": "Save report? (json/html/owner/pdf/no): ", "fr": "Enregistrer le rapport ? (json/html/owner/pdf/no) : ", "ar": "حفظ التقرير؟ (json/html/owner/pdf/no): "},
     "sans": {"en": "SANs", "fr": "SAN", "ar": "النطاقات في الشهادة"},
 }
 
@@ -225,7 +232,7 @@ VULN_TR = {
     "الموقع يعمل بدون HTTPS": ("Site running without HTTPS", "Site sans HTTPS", "فعّل HTTPS وأعد توجيه http إلى https", "Enable HTTPS and redirect http to https", "Activez HTTPS et redirigez http vers https"),
     "تعذر الوصول للموقع": ("Could not reach the site", "Impossible d'atteindre le site", "تحقق أن الموقع يعمل والرابط صحيح", "Check that the site is up and the URL is correct", "Vérifiez que le site fonctionne et que l'URL est correcte"),
     "غياب HSTS": ("Missing HSTS", "HSTS manquant", "أضف Strict-Transport-Security: max-age=31536000; includeSubDomains", "Add Strict-Transport-Security: max-age=31536000; includeSubDomains", "Ajoutez Strict-Transport-Security: max-age=31536000; includeSubDomains"),
-    "غياب Content-Security-Policy": ("Missing Content-Security-Policy", "Content-Security-Policy manquant", "أضف CSP مناسباً لموقعك، ابدأ بـ default-src 'self'", "Add a suitable CSP, start with default-src 'self'", "Ajoutez une CSP adaptée, commencez par default-src 'self'"),
+    "غياب Content-Security-Policy": ("Missing Content-Security-Policy", "Content-Security-Policy manquante", "أضف CSP مناسباً لموقعك، ابدأ بـ default-src 'self' (غياب CSP لا يثبت وجود XSS)", "Add a suitable CSP, start with default-src 'self' (missing CSP does not prove XSS)", "Ajoutez une CSP adaptée, commencez par default-src 'self' (l'absence de CSP ne prouve pas XSS)"),
     "CSP ضعيف": ("Weak CSP", "CSP faible", "أزل unsafe-inline/eval واستعمل nonce أو hash", "Remove unsafe-inline/eval, use nonce or hash", "Retirez unsafe-inline/eval, utilisez nonce ou hash"),
     "خطر Clickjacking": ("Clickjacking risk", "Risque de clickjacking", "أضف X-Frame-Options: DENY أو SAMEORIGIN", "Add X-Frame-Options: DENY or SAMEORIGIN", "Ajoutez X-Frame-Options: DENY ou SAMEORIGIN"),
     "غياب nosniff": ("Missing nosniff", "nosniff manquant", "أضف X-Content-Type-Options: nosniff", "Add X-Content-Type-Options: nosniff", "Ajoutez X-Content-Type-Options: nosniff"),
@@ -467,7 +474,7 @@ def show_help():
             "  developer         About the developer",
             "  lang <en|fr|ar>   Switch language",
             "  history           List previous scans",
-            "  export <json|html>  Export the last report",
+            "  export <json|html|owner|pdf>  Export the last report",
             "  whois <domain>    Public WHOIS for a domain",
             "  dns <domain>      DNS + DNSSEC for a domain",
             "  banner            Show the banner again",
@@ -483,7 +490,7 @@ def show_help():
             "  developer         À propos du développeur",
             "  lang <en|fr|ar>   Changer de langue",
             "  history           Lister les scans précédents",
-            "  export <json|html>  Exporter le dernier rapport",
+            "  export <json|html|owner|pdf>  Exporter le dernier rapport",
             "  whois <domaine>   WHOIS public d'un domaine",
             "  dns <domaine>     DNS + DNSSEC d'un domaine",
             "  banner            Réafficher la bannière",
@@ -499,7 +506,7 @@ def show_help():
             "  developer         عن المطور",
             "  lang <en|fr|ar>   تغيير اللغة",
             "  history           عرض الفحوصات السابقة",
-            "  export <json|html>  تصدير آخر تقرير",
+            "  export <json|html|owner|pdf>  تصدير آخر تقرير",
             "  whois <domain>    WHOIS عام لنطاق",
             "  dns <domain>      DNS و DNSSEC لنطاق",
             "  banner            عرض البانر من جديد",
@@ -529,15 +536,25 @@ def _do_scan(raw):
         save = input(t("save_fmt")).strip().lower()
     except (EOFError, KeyboardInterrupt):
         save = ""
-    if save in ("json", "both"):
+    if save in ("json", "both", "all"):
         fname = "conan-report.json"
         with open(fname, "w", encoding="utf-8") as f:
             json.dump(report, f, ensure_ascii=False, indent=2)
         out(t("saved") + fname)
-    if save in ("html", "both"):
+    if save in ("html", "both", "all"):
         fname = "conan-report.html"
         with open(fname, "w", encoding="utf-8") as f:
             f.write(generate_html_report(report))
+        out(t("saved") + fname)
+    if save in ("owner", "all"):
+        fname = "conan-owner-report.html"
+        with open(fname, "w", encoding="utf-8") as f:
+            f.write(generate_owner_html(report))
+        out(t("saved") + fname)
+    if save in ("pdf", "all"):
+        fname = "conan-owner-report.pdf"
+        with open(fname, "wb") as f:
+            f.write(generate_pdf_report(report))
         out(t("saved") + fname)
 
 
@@ -603,14 +620,22 @@ def msf_console():
                 out(t("no_target"))
             else:
                 fmt = (arg or "json").lower()
-                if fmt in ("json", "both"):
+                if fmt in ("json", "both", "all"):
                     with open("conan-report.json", "w", encoding="utf-8") as f:
                         json.dump(LAST_REPORT, f, ensure_ascii=False, indent=2)
                     out(t("saved") + "conan-report.json")
-                if fmt in ("html", "both"):
+                if fmt in ("html", "both", "all"):
                     with open("conan-report.html", "w", encoding="utf-8") as f:
                         f.write(generate_html_report(LAST_REPORT))
                     out(t("saved") + "conan-report.html")
+                if fmt in ("owner", "all"):
+                    with open("conan-owner-report.html", "w", encoding="utf-8") as f:
+                        f.write(generate_owner_html(LAST_REPORT))
+                    out(t("saved") + "conan-owner-report.html")
+                if fmt in ("pdf", "all"):
+                    with open("conan-owner-report.pdf", "wb") as f:
+                        f.write(generate_pdf_report(LAST_REPORT))
+                    out(t("saved") + "conan-owner-report.pdf")
         elif cmd == "whois":
             if not arg:
                 out(t("no_url"))
@@ -755,7 +780,8 @@ def resolve_dns(hostname):
 def check_tls(hostname, port=443):
     """يرجع قاموساً بتفاصيل الشهادة."""
     res = {"ok": False, "days_left": None, "issuer": "", "subject": "",
-           "version": "", "not_after": "", "error": "", "cipher": "", "sans": []}
+           "version": "", "not_after": "", "error": "", "cipher": "", "sans": [],
+           "chain_verified": None, "chain_unverifiable": False}
     if not hostname:
         res["error"] = "لا يوجد hostname"
         return res
@@ -766,6 +792,7 @@ def check_tls(hostname, port=443):
                 cert = ssock.getpeercert()
                 res["version"] = ssock.version() or ""
                 res["ok"] = True
+                res["chain_verified"] = True
                 try:
                     ciph = ssock.cipher()
                     if ciph:
@@ -793,6 +820,45 @@ def check_tls(hostname, port=443):
             res["days_left"] = (expiry - now).days
     except Exception as exc:
         res["error"] = str(exc)
+        # Fairness: a local verification failure (proxy / local CA store) must
+        # not fail the site. Re-read the cert without verification to get the
+        # real dates/issuer, and mark the chain as unverifiable *here*.
+        if "CERTIFICATE_VERIFY_FAILED" in str(exc) or "certificate verify failed" in str(exc):
+            try:
+                ctx2 = ssl._create_unverified_context()
+                with socket.create_connection((hostname, port), timeout=10) as sock:
+                    with ctx2.wrap_socket(sock, server_hostname=hostname) as ssock:
+                        cert = ssock.getpeercert()
+                        res["version"] = ssock.version() or ""
+                        res["ok"] = True
+                        res["chain_verified"] = False
+                        res["chain_unverifiable"] = True
+                        try:
+                            ciph = ssock.cipher()
+                            if ciph:
+                                res["cipher"] = "%s (%d-bit)" % (ciph[0], ciph[2])
+                        except Exception:
+                            pass
+                        def _flat2(items):
+                            d = {}
+                            for tup in items or []:
+                                for k, v in tup:
+                                    d[k] = v
+                            return d
+                        iss = _flat2(cert.get("issuer", []))
+                        sub = _flat2(cert.get("subject", []))
+                        res["issuer"] = iss.get("organizationName", "") or iss.get("commonName", "")
+                        res["subject"] = sub.get("commonName", "")
+                        not_after = cert.get("notAfter", "")
+                        res["not_after"] = not_after
+                        res["sans"] = [v for _t, v in cert.get("subjectAltName", [])]
+                        if not_after:
+                            expiry = datetime.datetime.strptime(not_after, "%b %d %H:%M:%S %Y %Z")
+                            expiry = expiry.replace(tzinfo=datetime.timezone.utc)
+                            now = datetime.datetime.now(datetime.timezone.utc)
+                            res["days_left"] = (expiry - now).days
+            except Exception:
+                pass
     return res
 
 
@@ -1079,6 +1145,219 @@ def tr_detail(detail):
     return out_d
 
 
+# ---------- v2.4: IP Intelligence / evidence / fix guides ----------
+
+CDN_MARKERS = ("cloudflare", "cloudfront", "fastly", "akamai", "sucuri", "incapsula")
+
+
+def ip_intel(hostname, domain, dns, lower):
+    """استخبارات IP من DNS العام فقط: A/AAAA/CNAME/NS + Reverse + تمييز CDN."""
+    out = {"ipv4": [], "ipv6": [], "a": [], "aaaa": [], "cname": [],
+           "nameservers": [], "reverse": {}, "cdn": False, "origin_confirmed": False,
+           "note": ""}
+    if not hostname:
+        return out
+    for ip in dns.get("ips", []):
+        (out["ipv4"] if "." in ip else out["ipv6"]).append(ip)
+    for rtype, key in (("A", "a"), ("AAAA", "aaaa"), ("CNAME", "cname"), ("NS", "nameservers")):
+        d = doh_query(hostname, rtype)
+        if d:
+            for a in d.get("Answer") or []:
+                v = (a.get("data") or "").rstrip(".")
+                if v and v not in out[key]:
+                    out[key].append(v)
+    for ip in out["ipv4"] + out["ipv6"]:
+        try:
+            out["reverse"][ip] = socket.gethostbyaddr(ip)[0]
+        except Exception:
+            out["reverse"][ip] = ""
+    hay = " ".join([lower.get("server", ""), lower.get("cf-ray", "")] + out["cname"]).lower()
+    out["cdn"] = bool(lower.get("cf-ray")) or any(m in hay for m in CDN_MARKERS)
+    if out["cdn"]:
+        out["note"] = "cdn"
+    return out
+
+
+SENSITIVE_PATHS = [
+    ("/.env", "env"), ("/.env.bak", "env"), ("/.git/HEAD", "git"),
+    ("/config.php", "php"), ("/wp-config.php", "php"), ("/wp-config.php.bak", "php"),
+    ("/backup.zip", "zip"), ("/db.sql", "sql"),
+]
+SECRET_KEY_RE = re.compile(r"^\s*([A-Z][A-Z0-9_]{2,})\s*=", re.M)
+
+
+def check_sensitive_files(base):
+    """هل توجد ملفات حساسة مكشوفة علناً؟ نعرض الأسماء فقط — القيم مخفية دائماً."""
+    found = []
+    for path, kind in SENSITIVE_PATHS:
+        st, size, snippet = fetch_small(base, path)
+        if st != 200 or not snippet:
+            continue
+        if kind == "git":
+            if snippet.strip().startswith("ref:"):
+                found.append({"path": path, "type": "git repo exposed",
+                              "keys": [], "detail": "HEAD is public (ref: ...)"})
+            continue
+        if kind == "env":
+            keys = sorted(set(SECRET_KEY_RE.findall(snippet)))
+            secret_keys = [k for k in keys if any(w in k for w in ("PASSWORD", "SECRET", "KEY", "TOKEN"))]
+            found.append({"path": path, "type": "env file exposed",
+                          "keys": secret_keys[:8],
+                          "detail": "%d secret keys found (names only, values masked)" % len(secret_keys)})
+            continue
+        found.append({"path": path, "type": "sensitive file exposed",
+                      "keys": [], "detail": "publicly accessible"})
+    return found
+
+
+FIX_SNIPPETS = {
+    "غياب HSTS": {
+        "apache": "Header always set Strict-Transport-Security \"max-age=31536000; includeSubDomains; preload\"",
+        "nginx": "add_header Strict-Transport-Security \"max-age=31536000; includeSubDomains; preload\" always;",
+        "laravel": "Add in app/Http/Middleware/SecurityHeaders.php: $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');",
+    },
+    "غياب Content-Security-Policy": {
+        "apache": "Header set Content-Security-Policy \"default-src 'self'; script-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'\"",
+        "nginx": "add_header Content-Security-Policy \"default-src 'self'; script-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'\";",
+        "laravel": "Add the same header in SecurityHeaders middleware or in config/secure-headers.php",
+    },
+    "خطر Clickjacking": {
+        "apache": "Header always set X-Frame-Options \"DENY\"",
+        "nginx": "add_header X-Frame-Options \"DENY\" always;",
+        "laravel": "In SecurityHeaders middleware: $response->headers->set('X-Frame-Options', 'DENY');",
+    },
+    "غياب nosniff": {
+        "apache": "Header set X-Content-Type-Options \"nosniff\"",
+        "nginx": "add_header X-Content-Type-Options \"nosniff\" always;",
+        "laravel": "$response->headers->set('X-Content-Type-Options', 'nosniff');",
+    },
+    "غياب Referrer-Policy": {
+        "apache": "Header set Referrer-Policy \"strict-origin-when-cross-origin\"",
+        "nginx": "add_header Referrer-Policy \"strict-origin-when-cross-origin\" always;",
+        "laravel": "$response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');",
+    },
+    "غياب Permissions-Policy": {
+        "apache": "Header set Permissions-Policy \"camera=(), microphone=(), geolocation=()\"",
+        "nginx": "add_header Permissions-Policy \"camera=(), microphone=(), geolocation=()\" always;",
+        "laravel": "$response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');",
+    },
+    "كوكيز بدون حماية كاملة": {
+        "apache": "Use cookies with Secure; HttpOnly; SameSite=Lax flags",
+        "nginx": "Use cookies with Secure; HttpOnly; SameSite=Lax flags",
+        "laravel": "In .env: SESSION_SECURE_COOKIE=true, SESSION_HTTP_ONLY=true, SESSION_SAME_SITE=lax",
+    },
+    "كوكيز بدون SameSite": {
+        "apache": "Add SameSite=Lax to cookies",
+        "nginx": "Add SameSite=Lax to cookies",
+        "laravel": "In .env: SESSION_SAME_SITE=lax",
+    },
+}
+
+
+def server_fixes(title):
+    return FIX_SNIPPETS.get(title, {})
+
+
+OWNER_EXPLAIN = {
+    "غياب Content-Security-Policy": {
+        "ar": "الموقع لا يرسل سياسة أمان للمحتوى. هذا لا يعني وجود ثغرة XSS مؤكدة، بل يعني أن طبقة حماية مهمة مفقودة. الحل: أضف رأس CSP كما في دليل الإصلاح.",
+        "en": "The site does not send a Content Security Policy. This does NOT confirm an XSS vulnerability — it means an important protection layer is missing. Fix: add the CSP header as shown in the fix guide.",
+    },
+    "غياب HSTS": {
+        "ar": "المتصفح قد يتصل بالموقع عبر http غير مشفر في أول زيارة. الحل: فعّل HSTS.",
+        "en": "A browser may first connect over unencrypted http. Fix: enable HSTS.",
+    },
+    "شهادة TLS تنتهي قريباً": {
+        "ar": "شهادة الأمان ستنتهي قريباً وسيظهر للمتصفح تحذير. الحل: جدد الشهادة قبل تاريخ الانتهاء.",
+        "en": "The security certificate expires soon and browsers will warn visitors. Fix: renew it before the expiry date.",
+    },
+    "كوكيز بدون حماية كاملة": {
+        "ar": "ملفات تعريف الارتباط (كوكيز) لا تحمل كل أعلام الحماية. الحل: فعّل Secure و HttpOnly و SameSite.",
+        "en": "Cookies are missing some protection flags. Fix: enable Secure, HttpOnly and SameSite.",
+    },
+    "ملف حساس مكشوف علناً": {
+        "ar": "ملف حساس متاح للجميع على الإنترنت وقد يحتوي أسراراً. الحل: امنع الوصول إليه فوراً وبدّل كل الأسرار المذكورة فيه.",
+        "en": "A sensitive file is publicly accessible and may contain secrets. Fix: block access immediately and rotate every secret listed in it.",
+    },
+}
+
+
+def owner_explain(title):
+    d = OWNER_EXPLAIN.get(title)
+    if not d:
+        return ""
+    return d.get(LANG) or d.get("en", "")
+
+
+def _pdf_escape(text):
+    return (text.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+            .encode("latin-1", "replace").decode("latin-1"))
+
+
+def generate_pdf_report(r):
+    """تقرير PDF بسيط لأصحاب المواقع (إنجليزي — الخط المضمّن لا يدعم العربية).
+    Pure-Python PDF writer, stdlib only. No secrets are ever written."""
+    lines = []
+    lines.append("Conan Detective - Owner Report")
+    lines.append("Target: " + r["target"])
+    lines.append("Date (UTC): " + r["checked_at_utc"])
+    lines.append("Developer: " + DEVELOPER_NAME + " - Algeria")
+    lines.append("")
+    lines.append("Security score: %d%% - %s" % (r["score"], r["grade"]))
+    lines.append("Confidence (verifiable evidence): %d%%" % r.get("confidence", 100))
+    lines.append("")
+    lines.append("What this means:")
+    lines.append("This is a passive audit of public settings only. It does not")
+    lines.append("prove an attack, and it never shows passwords or session values.")
+    lines.append("")
+    lines.append("Findings (%d):" % len(r["vulnerabilities"]))
+    for v in r["vulnerabilities"]:
+        sev = {"عالي": "HIGH", "متوسط": "MEDIUM", "منخفض": "LOW"}.get(v["severity"], v["severity"])
+        lines.append("")
+        lines.append("[%s] %s" % (sev, v["title"]))
+        lines.append("  Problem: " + v["detail"][:160])
+        lines.append("  Fix: " + v["fix"][:200])
+        fx = v.get("fixes") or {}
+        for srv in ("apache", "nginx", "laravel"):
+            if fx.get(srv):
+                lines.append("  %s: %s" % (srv, fx[srv][:200]))
+    lines.append("")
+    lines.append("Top fixes:")
+    for i, f in enumerate(r["top_fixes"][:3], 1):
+        lines.append("  %d. %s" % (i, f[:200]))
+    lines.append("")
+    lines.append("Conan Detective v%s - passive defensive audit only." % VERSION)
+    NL = chr(10)
+    content_lines = []
+    for i in range(0, len(lines), 40):
+        page = lines[i:i + 40]
+        stream = "BT /F1 11 Tf 50 800 Td 14 TL" + NL
+        for ln in page:
+            stream += "(" + _pdf_escape(ln[:110]) + ") Tj T*" + NL
+        stream += "ET"
+        content_lines.append(stream)
+    objects = []
+    objects.append(b"<< /Type /Catalog /Pages 2 0 R >>")
+    kids = " ".join("%d 0 R" % (4 + i * 2) for i in range(len(content_lines)))
+    objects.append(("<< /Type /Pages /Kids [%s] /Count %d >>" % (kids, len(content_lines))).encode())
+    objects.append(b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>")
+    for i, stream in enumerate(content_lines):
+        objects.append(("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents %d 0 R >>" % (5 + i * 2)).encode())
+        sb = stream.encode("latin-1")
+        objects.append(b"<< /Length " + str(len(sb)).encode() + b" >>" + NL.encode() + b"stream" + NL.encode() + sb + NL.encode() + b"endstream")
+    out = bytearray(b"%PDF-1.4" + NL.encode())
+    offsets = []
+    for i, obj in enumerate(objects, 1):
+        offsets.append(len(out))
+        out += ("%d 0 obj" % i).encode() + NL.encode() + obj + NL.encode() + b"endobj" + NL.encode()
+    xref_pos = len(out)
+    out += ("xref" + NL + "0 %d" % (len(objects) + 1) + NL + "0000000000 65535 f " + NL).encode()
+    for off in offsets:
+        out += ("%010d 00000 n " % off + NL).encode()
+    out += ("trailer" + NL + "<< /Size %d /Root 1 0 R >>" % (len(objects) + 1) + NL + "startxref" + NL + str(xref_pos) + NL + "%EOF").encode()
+    return bytes(out)
+
+
 def generate_html_report(r):
     """تقرير HTML احترافي مستقل (CSS مضمّن)، يدعم RTL للعربية."""
     lang = r.get("language", LANG)
@@ -1089,8 +1368,11 @@ def generate_html_report(r):
     rows = ""
     for c in r["checks"]:
         mark = "✔" if c["passed"] else "✘"
+        det = c["detail"]
+        if c.get("evidence") == "unverifiable":
+            det += " (unverifiable — not counted in the score)"
         rows += "<tr><td>%s</td><td>%s</td><td>%s/%s</td><td>%s</td></tr>" % (
-            mark, c["name"], c["points"] if c["passed"] else 0, c["points"], c["detail"])
+            mark, c["name"], c["points"] if c["passed"] else 0, c["points"], det)
     vrows = ""
     for v in r["vulnerabilities"]:
         vrows += "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>" % (
@@ -1116,6 +1398,44 @@ footer{color:#666;font-size:13px;margin-top:20px}</style></head><body>
 </body></html>""" % (lang, direction, r["target"], color, r["target"],
                      r["checked_at_utc"], DEVELOPER_NAME, score, r["grade"],
                      comp_html, rows, len(r["vulnerabilities"]), vrows, VERSION)
+    return html
+
+
+def generate_owner_html(r):
+    """تقرير صاحب الموقع: شرح مبسط لكل مشكلة وطريقة إصلاحها — بدون أي أسرار."""
+    lang = r.get("language", LANG)
+    direction = "rtl" if lang == "ar" else "ltr"
+    score = r["score"]
+    color = "#16a34a" if score >= 80 else "#ca8a04" if score >= 60 else "#dc2626"
+    sev_map = {"عالي": "HIGH", "متوسط": "MEDIUM", "منخفض": "LOW"}
+    blocks = ""
+    for v in r["vulnerabilities"]:
+        expl = owner_explain(v["title"])
+        fx = v.get("fixes") or {}
+        fx_html = ""
+        for srv in ("apache", "nginx", "laravel"):
+            if fx.get(srv):
+                fx_html += "<p><b>%s:</b> <code>%s</code></p>" % (srv, fx[srv])
+        blocks += "<h3>[%s] %s</h3><p>%s</p><p><b>Fix:</b> %s</p>%s" % (
+            sev_map.get(v["severity"], v["severity"]), v["title"],
+            expl or v["detail"], v["fix"], fx_html)
+    if not blocks:
+        blocks = "<p>No weaknesses found — well done.</p>"
+    html = """<!DOCTYPE html><html lang="%s" dir="%s"><head><meta charset="utf-8">
+<title>Conan Detective — Owner Report — %s</title><style>
+body{font-family:system-ui,Arial,sans-serif;max-width:900px;margin:20px auto;padding:0 16px;color:#111}
+h1{font-size:22px} .score{font-size:44px;color:%s} code{background:#f3f4f6;padding:2px 4px}
+footer{color:#666;font-size:13px;margin-top:20px}</style></head><body>
+<h1>🔍 Conan Detective — Owner Report</h1>
+<p>Target: <b>%s</b><br>Date (UTC): %s<br>Developer: %s — Algeria</p>
+<p class="score">%d%% — %s</p>
+<p>Confidence (verifiable evidence): %d%% — this is a passive audit of public settings only.
+It does not prove an attack, and it never shows passwords or session values.</p>
+%s
+<footer>Conan Detective v%s — passive defensive audit only.</footer>
+</body></html>""" % (lang, direction, r["target"], color, r["target"],
+                     r["checked_at_utc"], DEVELOPER_NAME, score, r["grade"],
+                     r.get("confidence", 100), blocks, VERSION)
     return html
 
 
@@ -1157,12 +1477,18 @@ def run_check(target_url):
     hostname = parsed.hostname or ""
     domain = registrable_domain(hostname)
 
-    vulns = []  # {severity, title, detail, fix}
+    vulns = []  # {severity, title, detail, fix, fixes, evidence}
     infos = []  # معلومات عامة
     score_points = []  # (name, passed, points, detail)
+    evidence_map = {}  # check name -> "confirmed" | "unverifiable"
 
-    def add_vuln(sev, title, detail, fix):
-        vulns.append({"severity": sev, "title": title, "detail": detail, "fix": fix})
+    def sp(name, passed, points, detail, evidence="confirmed"):
+        score_points.append((name, passed, points, detail))
+        evidence_map[name] = evidence
+
+    def add_vuln(sev, title, detail, fix, evidence="confirmed"):
+        vulns.append({"severity": sev, "title": title, "detail": detail, "fix": fix,
+                      "fixes": server_fixes(title), "evidence": evidence})
 
     # 1) DNS
     dns = resolve_dns(hostname)
@@ -1185,19 +1511,26 @@ def run_check(target_url):
     # 2) WHOIS
     whois = get_whois(domain)
 
-    # 3) TLS
+    # 3) TLS — مع التحقق من السلسلة والعدالة: مشكلة محلية لا تُسقط الدرجة
     tls = {"ok": False, "days_left": None}
     if is_https and hostname:
         tls = check_tls(hostname)
-        score_points.append(("HTTPS مفعل", True, 10, "https"))
-        if tls["ok"] and tls["days_left"] is not None:
+        sp("HTTPS مفعل", True, 10, "https")
+        if tls.get("chain_unverifiable"):
+            # لا نعرف إن كانت الشهادة المقروءة هي شهادة الموقع الحقيقية (بروكسي؟)
+            sp("شهادة TLS صالحة", False, 10, "سلسلة الشهادة غير قابلة للتحقق في هذه البيئة", evidence="unverifiable")
+            infos.append("سلسلة الشهادة لا يمكن التحقق منها في هذه البيئة (قد يكون بروكسي محلي) — لا تؤثر في الدرجة، تحقق من Termux باتصال مباشر")
+            if tls["days_left"] is not None:
+                infos.append("تاريخ انتهاء الشهادة المقروءة: بعد %d يوماً (غير مؤكد — قد تكون شهادة وسيط)" % tls["days_left"])
+        elif tls["ok"] and tls["days_left"] is not None:
+            chain_note = "سلسلة الشهادة موثوقة" if tls.get("chain_verified") else ""
             if tls["days_left"] > 30:
-                score_points.append(("شهادة TLS صالحة", True, 10, "تنتهي بعد %d يوماً - %s" % (tls["days_left"], tls["issuer"])))
+                sp("شهادة TLS صالحة", True, 10, "تنتهي بعد %d يوماً - %s" % (tls["days_left"], tls["issuer"]))
             elif tls["days_left"] > 0:
-                score_points.append(("شهادة TLS صالحة", False, 10, "تنتهي قريباً بعد %d يوماً" % tls["days_left"]))
-                add_vuln("متوسط", "شهادة TLS تنتهي قريباً", "بقي %d يوماً" % tls["days_left"], "جدد الشهادة قبل الانتهاء")
+                sp("شهادة TLS صالحة", False, 10, "تنتهي قريباً بعد %d يوماً" % tls["days_left"])
+                add_vuln("متوسط", "شهادة TLS تنتهي قريباً", "بقي %d يوماً — %s" % (tls["days_left"], chain_note), "جدد الشهادة قبل الانتهاء")
             else:
-                score_points.append(("شهادة TLS صالحة", False, 10, "منتهية"))
+                sp("شهادة TLS صالحة", False, 10, "منتهية")
                 add_vuln("عالي", "شهادة TLS منتهية", tls["not_after"], "جدد الشهادة فوراً")
             if tls["version"] and tls["version"] in ("TLSv1", "TLSv1.1"):
                 add_vuln("عالي", "إصدار TLS قديم وغير آمن", tls["version"], "فعّل TLS 1.2 كحد أدنى ويفضل 1.3 فقط")
@@ -1209,10 +1542,10 @@ def run_check(target_url):
             if tls.get("sans"):
                 infos.append("SANs: %d (%s)" % (len(tls["sans"]), ", ".join(tls["sans"][:3])))
         else:
-            score_points.append(("شهادة TLS صالحة", False, 10, tls["error"] or "تعذر الفحص"))
+            sp("شهادة TLS صالحة", False, 10, tls["error"] or "تعذر الفحص")
             add_vuln("عالي", "تعذر التحقق من شهادة TLS", tls["error"], "تحقق من تثبيت الشهادة وسلسلتها")
     else:
-        score_points.append(("HTTPS مفعل", False, 10, "http فقط - غير آمن"))
+        sp("HTTPS مفعل", False, 10, "http فقط - غير آمن")
         add_vuln("عالي", "الموقع يعمل بدون HTTPS", "الاتصال غير مشفر", "فعّل HTTPS وأعد توجيه http إلى https")
 
     # 4) HTTP + Headers
@@ -1231,6 +1564,13 @@ def run_check(target_url):
     else:
         add_vuln("عالي", "تعذر الوصول للموقع", fetch_error or "", "تحقق أن الموقع يعمل والرابط صحيح")
 
+    # عدالة TLS: إذا وصلنا للموقع عبر HTTPS بنجاح لكن فحص TLS المباشر فشل،
+    # فالفشل من البيئة المحلية (بروكسي/شبكة) وليس دليلاً على الموقع.
+    if is_https and status is not None and not tls.get("ok"):
+        evidence_map["شهادة TLS صالحة"] = "unverifiable"
+        vulns[:] = [v for v in vulns if v["title"] != "تعذر التحقق من شهادة TLS"]
+        infos.append("فحص TLS المباشر تعذر في هذه البيئة رغم نجاح الاتصال HTTPS — غير محسوب في الدرجة")
+
     def has(name):
         return name in lower and bool(lower[name])
 
@@ -1238,7 +1578,7 @@ def run_check(target_url):
     hsts = lower.get("strict-transport-security", "")
     hsts_info = analyze_hsts(hsts)
     if has("strict-transport-security"):
-        score_points.append(("HSTS", True, 10, hsts))
+        sp("HSTS", True, 10, hsts)
         if hsts_info["max_age"] is not None and hsts_info["max_age"] < 31536000:
             add_vuln("متوسط", "HSTS max-age قصير", "max-age=%d" % hsts_info["max_age"], "ارفع max-age إلى 31536000 على الأقل")
         if not hsts_info["subdomains"]:
@@ -1246,7 +1586,7 @@ def run_check(target_url):
         if not hsts_info["preload"]:
             infos.append("HSTS موجود بدون preload - يمكن إضافته بعد التأكد")
     else:
-        score_points.append(("HSTS", False, 10, "مفقود"))
+        sp("HSTS", False, 10, "مفقود")
         if is_https:
             add_vuln("عالي", "غياب HSTS", "المتصفح قد يقبل اتصال http أول مرة", "أضف Strict-Transport-Security: max-age=31536000; includeSubDomains")
 
@@ -1254,7 +1594,7 @@ def run_check(target_url):
     csp = lower.get("content-security-policy", "")
     csp_info = analyze_csp(csp)
     if has("content-security-policy"):
-        score_points.append(("Content-Security-Policy", True, 10, "موجود"))
+        sp("Content-Security-Policy", True, 10, "موجود")
         if csp_info["unsafe_inline"] or csp_info["unsafe_eval"]:
             add_vuln("متوسط", "CSP ضعيف", "يحتوي unsafe-inline أو unsafe-eval", "أزل unsafe-inline/eval واستعمل nonce أو hash")
         if csp_info["wildcard"]:
@@ -1262,19 +1602,19 @@ def run_check(target_url):
         if csp_info["missing"]:
             infos.append("CSP ينقصه: %s" % ", ".join(csp_info["missing"]))
     else:
-        score_points.append(("Content-Security-Policy", False, 10, "مفقود"))
-        add_vuln("عالي", "غياب Content-Security-Policy", "خطر XSS وحقن محتوى", "أضف CSP مناسباً لموقعك، ابدأ بـ default-src 'self'")
+        sp("Content-Security-Policy", False, 10, "مفقود")
+        add_vuln("متوسط", "غياب Content-Security-Policy", "غياب CSP لا يعني وجود XSS مؤكدة — طبقة حماية مفقودة", "أضف CSP مناسباً لموقعك، ابدأ بـ default-src 'self'")
 
     # Clickjacking
     xfo = lower.get("x-frame-options", "")
     frame_ok = bool(xfo) or "frame-ancestors" in csp
-    score_points.append(("حماية من التضمين X-Frame", frame_ok, 8, xfo or ("frame-ancestors في CSP" if frame_ok else "مفقود")))
+    sp("حماية من التضمين X-Frame", frame_ok, 8, xfo or ("frame-ancestors في CSP" if frame_ok else "مفقود"))
     if not frame_ok:
         add_vuln("متوسط", "خطر Clickjacking", "لا يوجد X-Frame-Options ولا frame-ancestors", "أضف X-Frame-Options: DENY أو SAMEORIGIN")
 
     # nosniff
     nosniff_ok = lower.get("x-content-type-options", "").lower() == "nosniff"
-    score_points.append(("X-Content-Type-Options nosniff", nosniff_ok, 7, lower.get("x-content-type-options", "مفقود")))
+    sp("X-Content-Type-Options nosniff", nosniff_ok, 7, lower.get("x-content-type-options", "مفقود"))
     if not nosniff_ok:
         add_vuln("متوسط", "غياب nosniff", "المتصفح قد يخمن نوع المحتوى", "أضف X-Content-Type-Options: nosniff")
 
@@ -1286,7 +1626,7 @@ def run_check(target_url):
         ("cross-origin-embedder-policy", 3, "Cross-Origin-Embedder-Policy"),
     ]:
         ok = has(hdr)
-        score_points.append((title, ok, pts, lower.get(hdr, "مفقود")))
+        sp(title, ok, pts, lower.get(hdr, "مفقود"))
         if not ok:
             add_vuln("منخفض", "غياب %s" % title, "رأس خصوصية/صلاحيات مفقود", "أضف %s مناسباً" % title)
 
@@ -1303,7 +1643,7 @@ def run_check(target_url):
     cookies = parse_cookies(headers)
     if cookies:
         cookie_ok = all(c["secure"] and c["httponly"] for c in cookies)
-        score_points.append(("كوكيز آمنة", cookie_ok, 5, "Secure+HttpOnly" if cookie_ok else "ناقصة Secure أو HttpOnly"))
+        sp("كوكيز آمنة", cookie_ok, 5, "Secure+HttpOnly" if cookie_ok else "ناقصة Secure أو HttpOnly")
         for c in cookies:
             if not (c["secure"] and c["httponly"]):
                 add_vuln("متوسط", "كوكيز بدون حماية كاملة", "%s: Secure=%s HttpOnly=%s (value masked)" % (c["name"], c["secure"], c["httponly"]), "أضف Secure و HttpOnly و SameSite=Lax للكوكيز")
@@ -1311,16 +1651,16 @@ def run_check(target_url):
                 add_vuln("منخفض", "كوكيز بدون SameSite", "%s: بدون SameSite" % c["name"], "أضف SameSite=Lax أو Strict")
     else:
         cookies = []
-        score_points.append(("كوكيز آمنة", True, 5, "لا توجد كوكيز في الرد"))
+        sp("كوكيز آمنة", True, 5, "لا توجد كوكيز في الرد")
 
     # Mixed content
     if is_https and body:
         http_links = re.findall(r'(?:src|href)\s*=\s*["\']http://[^"\']+', body, re.I)
         if http_links:
             add_vuln("عالي", "محتوى مختلط Mixed Content", "%d رابط http داخل صفحة https" % len(http_links), "حوّل كل الموارد إلى https أو روابط نسبية")
-            score_points.append(("بدون محتوى مختلط", False, 5, "%d رابط http" % len(http_links)))
+            sp("بدون محتوى مختلط", False, 5, "%d رابط http" % len(http_links))
         else:
-            score_points.append(("بدون محتوى مختلط", True, 5, "لا يوجد http ظاهر"))
+            sp("بدون محتوى مختلط", True, 5, "لا يوجد http ظاهر")
 
     # ملفات عامة: تحليل robots/sitemap + التحقق من محتوى security.txt
     base = "%s://%s" % (parsed.scheme, parsed.netloc)
@@ -1348,10 +1688,33 @@ def run_check(target_url):
     if not sec_valid:
         add_vuln("منخفض", "لا يوجد security.txt", "لا توجد طريقة معلنة للإبلاغ عن ثغرة", "أضف /.well-known/security.txt مع بريد للتواصل الأمني")
 
-    # النتيجة
-    total = sum(p for _n, ok, p, _d in score_points if ok)
+    # IP Intelligence (DNS العام فقط) + تمييز CDN عن الخادم الأصلي
+    ip_intel_data = ip_intel(hostname, domain, dns, lower)
+    if ip_intel_data.get("cdn"):
+        infos.append("CDN/Proxy مكتشف — IP الظاهر هو IP الوسيط، والأصل غير مؤكد")
+
+    # ملفات حساسة مكشوفة علناً: الأسماء فقط — القيم مخفية دائماً
+    sensitive_files = check_sensitive_files(base)
+    for sf in sensitive_files:
+        detail = "%s — %s" % (sf["path"], sf["detail"])
+        if sf.get("keys"):
+            detail += " — keys: " + ", ".join(sf["keys"])
+        add_vuln("عالي", "ملف حساس مكشوف علناً", detail, "امنع الوصول العام إلى %s فوراً، وبدّل كل الأسرار الواردة فيه" % sf["path"])
+
+    # النتيجة: تقييم موزون بالأدلة — الفحوصات غير القابلة للتحقق لا تُحسب
+    if status is None:
+        for _n in ("شهادة TLS صالحة", "HSTS", "Content-Security-Policy", "حماية من التضمين X-Frame",
+                   "X-Content-Type-Options nosniff", "Referrer-Policy", "Permissions-Policy",
+                   "Cross-Origin-Opener-Policy", "Cross-Origin-Embedder-Policy",
+                   "كوكيز آمنة", "بدون محتوى مختلط"):
+            if _n in evidence_map:
+                evidence_map[_n] = "unverifiable"
+    verifiable = [(n, ok, p) for n, ok, p, _d in score_points if evidence_map.get(n, "confirmed") == "confirmed"]
+    total = sum(p for _n, ok, p in verifiable if ok)
+    max_verifiable = sum(p for _n, _ok, p in verifiable)
     max_total = sum(p for _n, _ok, p, _d in score_points)
-    score = int(round(100.0 * total / max_total)) if max_total else 0
+    score = int(round(100.0 * total / max_verifiable)) if max_verifiable else 0
+    confidence = int(round(100.0 * max_verifiable / max_total)) if max_total else 0
 
     # ترتيب الثغرات حسب الخطورة
     order = {"عالي": 0, "متوسط": 1, "منخفض": 2}
@@ -1365,7 +1728,7 @@ def run_check(target_url):
     comparison = compare_and_save(domain, url, score, grade(score), [v["title"] for v in vulns_sorted])
 
     report = {
-        "tool": "Conan Detective 2.3 - المحقق كونان",
+        "tool": "Conan Detective 2.4 - المحقق كونان",
         "version": VERSION,
         "language": LANG,
         "developer": DEVELOPER_NAME,
@@ -1387,13 +1750,16 @@ def run_check(target_url):
         "sitemap": sitemap,
         "comparison": comparison,
         "infos": infos,
-        "checks": [{"name": n, "passed": ok, "points": p, "detail": d} for n, ok, p, d in score_points],
+        "checks": [{"name": n, "passed": ok, "points": p, "detail": d, "evidence": evidence_map.get(n, "confirmed")} for n, ok, p, d in score_points],
+        "confidence": confidence,
+        "ip_intel": ip_intel_data,
+        "sensitive_files": sensitive_files,
         "vulnerabilities": vulns_sorted,
         "counts": counts,
         "top_fixes": top_fixes,
         "public_files": public_files,
         "checked_at_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-        "note": "فحص سلبي دفاعي فقط - لا استغلال ولا دخول ولا تجربة حمولات. استعمل على موقعك أو بإذن كتابي.",
+        "note": "فحص سلبي دفاعي فقط - لا استغلال ولا دخول ولا تجربة حمولات. الدرجة موزونة بالأدلة المؤكدة فقط؛ الفحوصات غير القابلة للتحقق لا تُحسب. لا يعرض التقرير أي كلمات مرور أو قيم جلسات — عند كشف ملف حساس تُعرض الأسماء فقط. استعمل على موقعك أو بإذن كتابي.",
     }
     return report
 
@@ -1454,10 +1820,30 @@ def print_report(r):
     if r["tech_hints"]:
         out(" | ".join(r["tech_hints"]))
 
+    ip = r.get("ip_intel") or {}
+    if ip:
+        out("\n--- 🌐 " + t("ip_section") + " ---")
+        out("IPv4: " + (", ".join(ip.get("ipv4", [])) or "-"))
+        out("IPv6: " + (", ".join(ip.get("ipv6", [])) or "-"))
+        if ip.get("a"):
+            out("A: " + ", ".join(ip["a"]))
+        if ip.get("aaaa"):
+            out("AAAA: " + ", ".join(ip["aaaa"]))
+        if ip.get("cname"):
+            out("CNAME: " + ", ".join(ip["cname"]))
+        if ip.get("nameservers"):
+            out(t("nameservers") + ": " + ", ".join(ip["nameservers"]))
+        for rip, rhost in (ip.get("reverse") or {}).items():
+            if rhost:
+                out("Reverse %s: %s" % (rip, rhost))
+        if ip.get("cdn"):
+            out(t("origin_note"))
+
     out("\n--- ✅ " + t("checks_section") + " ---")
     for c in r["checks"]:
         mark = "✔" if c["passed"] else "✘"
-        out(" %s %s : %d/%d - %s" % (mark, _tr_check(c["name"]), c["points"] if c["passed"] else 0, c["points"], tr_detail(c["detail"])))
+        ev = (" [?] " + t("unverifiable")) if c.get("evidence") == "unverifiable" else ""
+        out(" %s %s : %d/%d - %s%s" % (mark, _tr_check(c["name"]), c["points"] if c["passed"] else 0, c["points"], tr_detail(c["detail"]), ev))
 
     if r["infos"]:
         out("\n--- ℹ️ " + t("notes_section") + " ---")
@@ -1483,6 +1869,12 @@ def print_report(r):
             out(" - none")
         for c in r["cookies"]:
             out(" - %s: value=%s Secure=%s HttpOnly=%s SameSite=%s" % (c["name"], c["value"], c["secure"], c["httponly"], c["samesite"] or "-"))
+    sf = r.get("sensitive_files") or []
+    if sf:
+        out("\n--- 🔐 " + t("sensitive_section") + " ---")
+        for f in sf:
+            keys = (" — keys: " + ", ".join(f.get("keys", []))) if f.get("keys") else ""
+            out(" - %s: %s%s (values masked — rotate now)" % (f["path"], f["detail"], keys))
     comp = r.get("comparison") or {}
     out("\n--- 📊 " + t("comparison_section") + " ---")
     if comp.get("previous"):
@@ -1504,10 +1896,15 @@ def print_report(r):
         out("\n [%s] %s" % (sev, title))
         out("   " + t("details") + " " + v["detail"])
         out("   " + t("fix") + " " + fix)
+        fx = v.get("fixes") or {}
+        for srv in ("apache", "nginx", "laravel"):
+            if fx.get(srv):
+                out("   %s: %s" % (srv, fx[srv][:110]))
 
     print("\n" + "=" * 60)
     out("📊 " + t("summary") + ": " + t("score") + " %d%%" % r["score"])
     out(t("grade") + ": " + r["grade"])
+    out(t("confidence") + ": %d%%" % r.get("confidence", 100))
     if r["vulnerabilities"]:
         out(t("top_fixes"))
         for i, v in enumerate(r["vulnerabilities"][:3], 1):
@@ -1524,6 +1921,8 @@ def main():
     ap.add_argument("--json", action="store_true", help="إخراج JSON فقط")
     ap.add_argument("-o", "--output", help="حفظ التقرير JSON في ملف")
     ap.add_argument("--html", help="حفظ تقرير HTML احترافي في ملف")
+    ap.add_argument("--owner-html", help="حفظ تقرير صاحب الموقع HTML في ملف")
+    ap.add_argument("--pdf", help="حفظ تقرير صاحب الموقع PDF في ملف")
     ap.add_argument("--about", action="store_true", help="عرض معلومات عن الأداة فقط")
     ap.add_argument("--developer", action="store_true", help="عرض معلومات عن المطور فقط")
     ap.add_argument("--lang", choices=["en", "fr", "ar"], default=None, help="Language: en / fr / ar (Arabic RTL)")
@@ -1562,6 +1961,14 @@ def main():
         with open(args.html, "w", encoding="utf-8") as f:
             f.write(generate_html_report(report))
         print("تم حفظ تقرير HTML في:", args.html)
+    if args.owner_html:
+        with open(args.owner_html, "w", encoding="utf-8") as f:
+            f.write(generate_owner_html(report))
+        print("تم حفظ تقرير صاحب الموقع HTML في:", args.owner_html)
+    if args.pdf:
+        with open(args.pdf, "wb") as f:
+            f.write(generate_pdf_report(report))
+        print("تم حفظ تقرير PDF في:", args.pdf)
 
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=2))
