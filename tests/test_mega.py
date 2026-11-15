@@ -111,9 +111,10 @@ class TestMegaScan(unittest.TestCase):
         self.assertEqual(scan["deep_paths"], [])
 
     def test_mega_flow_back_opens_menu(self):
-        # Default flow: language 1, splash pause, then 0 at the URL prompt
-        # opens the classic menu; 20 there exits. run() must return 0.
-        with mock.patch("builtins.input", side_effect=["1", "", "0", "20"]):
+        # Entry flow: welcome pause, language 1, then `menu` in the
+        # console opens the classic menu; 20 there exits back to the
+        # console, and EOF ends it. run() must return 0.
+        with mock.patch("builtins.input", side_effect=["", "1", "menu", "20", "exit"]):
             with mock.patch("conan.core.terminal.is_tty", return_value=False):
                 buf = io.StringIO()
                 with contextlib.redirect_stdout(buf):

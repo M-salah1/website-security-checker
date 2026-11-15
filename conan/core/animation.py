@@ -101,26 +101,12 @@ class Investigation:
             with self._lock:
                 frame = self._frame
                 self._frame += 1
-                done = self.done_count
-                current = self.current
-                last_log = self.last_log
             spin = SPINNER[frame % len(SPINNER)]
-            radar = RADAR[frame % len(RADAR)]
-            det = DETECTIVE[frame % len(DETECTIVE)]
-            bar = terminal.progress_bar(done, self.total, width=24)
-            elapsed = time.time() - self.started_at if self.started_at else 0
-            # Keep the visible line short enough to never wrap: the latest
-            # log message joins the same line instead of opening a new one.
-            width = max(40, terminal.term_width() - 2)
-            budget = max(10, width - 50)
-            cur = current[:budget // 2]
-            log = last_log[:budget - len(cur)]
-            tail = ("  %s" % cur) if cur else ""
-            if log:
-                tail += ("  |  %s" % log)
-            line = "\r\x1b[K%s %s %s %s  %s  %.1fs%s" % (
-                terminal.orange(spin), radar, det, terminal.orange("CONAN"),
-                bar, elapsed, tail)
+            # While a scan runs, the tool writes only this one line:
+            # spinner + "Scanning..." with animated dots. Phase names and
+            # log messages are tracked internally, never printed.
+            dots = "." * (1 + (frame // 4) % 3)
+            line = "\r\x1b[K%s Scanning%s" % (terminal.orange(spin), dots)
             try:
                 sys.stdout.write(line)
                 sys.stdout.flush()

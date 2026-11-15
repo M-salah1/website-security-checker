@@ -64,7 +64,7 @@ class TestSplashAndTerms(unittest.TestCase):
         from conan.laboratory import safe_lab
         server, url = safe_lab.start_lab()
         try:
-            inputs = ["1", "", url, "y", "0", "x"]
+            inputs = ["", "1", url, "y", "0", "x", "exit"]
             with mock.patch("builtins.input", side_effect=inputs):
                 with mock.patch("conan.core.terminal.is_tty", return_value=False):
                     buf = io.StringIO()

@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Main menu + smart investigation wizard for CONAN FRAMEWORK v5.3.
+"""Main menu + smart investigation wizard for CONAN FRAMEWORK v5.4.
 
-Welcome screen -> language selection (remembered) -> MEGA SCAN by
-default: enter a URL once and every module runs together, then a
-detailed report. The classic 20-option menu is still there — press 0
-at the URL prompt, choose it after a scan, or start with
+Welcome screen (full page: tool, developer, how-to) -> language
+selection -> command console (`conan >`): scan <url>, help, menu,
+about, lang, version, clear, exit. `scan` runs the mega scan (every
+module together + detailed report) after the ethical-terms question.
+The classic 20-option menu is still there via `menu` or
 `python3 conan.py menu`. Navigation commands BACK / HOME / MENU /
 CANCEL / EXIT work at every prompt; BACK preserves completed results
 (they live in the case store and the session store, not on the screen).
@@ -179,24 +180,15 @@ class MenuApp:
             pass
 
     # -- screens -----------------------------------------------------------
-    def welcome(self):
-        play_intro(enabled=self.settings.get("animation", True)
-                   and not self.no_animation)
-        print(terminal.orange("   🔍  " + self.disp(self.t("app_title"))))
-        print(terminal.orange("   " + self.disp(self.t("app_subtitle"))))
-        print(terminal.grey("   ────────────────────────────────────────────────"))
-        self.out("   %s: Hafed Mehdi Salah Eddine" % self.t("developer"))
-        self.out("   %s: M-salah1" % self.t("github"))
-        self.out("   %s: Algeria 🇩🇿" % self.t("country"))
-        print(terminal.grey("   CONAN FRAMEWORK v%s  •  Copyright © 2026" % __version__))
-        print()
-
-    def show_splash(self):
-        """Strong graphical entry screen: what the tool is, who made it."""
+    def _print_welcome(self):
+        """The complete welcome page: banner, tool, developer, how-to."""
         print(terminal.rule())
         print(terminal.orange("   ╔══════════════════════════════════════════════╗"))
-        print(terminal.orange("   ║   🔍  CONAN FRAMEWORK v%-4s               ║" % __version__))
-        print(terminal.orange("   ║   " + self.disp(self.t("app_title")) + "                          ║"))
+        print(terminal.orange("   ║                                              ║"))
+        print(terminal.orange("   ║    🔍  C O N A N   F R A M E W O R K      ║"))
+        print(terminal.orange("   ║    " + self.disp(self.t("app_title")) + "                          ║"))
+        print(terminal.orange("   ║    " + self.disp(self.t("app_subtitle")) + "              ║"))
+        print(terminal.orange("   ║                                              ║"))
         print(terminal.orange("   ╚══════════════════════════════════════════════╝"))
         print(terminal.green("   🛡  " + self.disp(self.t("shield_line"))))
         print(terminal.rule())
@@ -204,12 +196,23 @@ class MenuApp:
         self.out("   %s" % self.disp(self.t("about_tool_text")))
         print()
         self.out("   ◆ %s" % self.disp(self.t("about_developer")))
-        self.out("   %s" % self.disp("Hafed Mehdi Salah Eddine"))
-        self.out("   %s" % self.disp(self.t("developer_role")))
-        self.out("   GitHub: M-salah1")
-        self.out("   %s" % self.disp(self.t("developer_org")))
+        self.out("   Hafed Mehdi Salah Eddine  •  %s" % self.disp(self.t("developer_role")))
+        self.out("   GitHub: M-salah1  •  %s" % self.disp(self.t("developer_org")))
+        print()
+        self.out("   ◆ %s" % self.disp(self.t("how_to_work")))
+        self.out("   %s" % self.disp(self.t("how_to_steps")))
         print(terminal.grey("   CONAN FRAMEWORK v%s  •  Copyright © 2026" % __version__))
         print(terminal.rule())
+
+    def welcome(self):
+        play_intro(enabled=self.settings.get("animation", True)
+                   and not self.no_animation)
+        self._print_welcome()
+        self.pause()
+
+    def show_splash(self):
+        """Same welcome page, shown again by the `about` command."""
+        self._print_welcome()
         self.pause()
 
     def accept_terms(self, url):
@@ -495,7 +498,7 @@ class MenuApp:
             findings += vuln_mod.test_file_upload(forms.get("forms", []), url)
         finally:
             inv.done()
-        scan = {"tool": "CONAN FRAMEWORK v5.3", "target": url,
+        scan = {"tool": "CONAN FRAMEWORK v5.4", "target": url,
                 "kind": "vulnerability-audit",
                 "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -917,58 +920,112 @@ class MenuApp:
         self.nav.push("home")
         self.welcome()
         self.language_screen()
-        self.show_splash()
         if start_menu:
             return self.classic_menu_loop()
-        # Default: the big scan first — enter a URL once, accept the
-        # ethical-use terms with y, and everything runs together.
+        return self.console_loop()
+
+    def console_loop(self):
+        """The command console — the tool's front door.
+
+        Commands: scan <url>, <url>, help, menu, about, lang, version,
+        clear, exit. Type `help` for the full work guide.
+        """
+        self.out(self.t("console_welcome"))
         while True:
+            # Raw input here: the console's own words (menu, back, exit)
+            # must reach the console, not the navigation layer.
             try:
-                url = self.ask_url()
-            except NavCommand as nav:
-                if nav.command == "EXIT":
-                    break
-                return self.classic_menu_loop()
-            try:
-                if not self.accept_terms(url):
+                line = input("conan > ").strip()
+            except (EOFError, KeyboardInterrupt):
+                break
+            if not line:
+                continue
+            cmd, _, rest = line.partition(" ")
+            cmd = cmd.lower()
+            rest = rest.strip()
+            if cmd in ("exit", "quit", "0"):
+                break
+            if cmd == "help":
+                self.print_help()
+                continue
+            if cmd == "menu":
+                self.classic_menu_loop(from_console=True)
+                continue
+            if cmd == "about":
+                self.show_splash()
+                continue
+            if cmd == "version":
+                self.out("CONAN FRAMEWORK v%s" % __version__)
+                continue
+            if cmd == "lang":
+                self.language_screen()
+                continue
+            if cmd == "clear":
+                print("\033[2J\033[H", end="")
+                continue
+            if cmd == "scan":
+                try:
+                    url = rest or self.ask_url()
+                except NavCommand:
                     continue
-                self.opt_mega_scan(url)
-            except NavCommand as nav:
-                if nav.command == "EXIT":
+                if not self._scan_command(url):
                     break
-                self.nav.home()
                 continue
-            except KeyboardInterrupt:
-                self.out(self.t("cancelled"))
-                continue
-            except ScopeError as exc:
-                print(str(exc))
-                self.out(self.t("not_authorized"))
-                self.pause()
-                continue
-            except Exception as exc:
-                print("Error: %s" % exc)
-                self.pause()
-                continue
-            # After the report: 1 = another scan, 2 = classic menu, 0 = exit.
-            self.out("1. %s    2. %s    0. %s" % (
-                self.disp(self.t("scan_another")), self.disp(self.t("main_menu")),
-                self.disp(self.t("back"))))
-            try:
-                choice = self.ask(self.t("enter_choice"))
-            except NavCommand as nav:
-                if nav.command == "EXIT":
+            if self._looks_like_url(line):
+                if not self._scan_command(line):
                     break
-                return self.classic_menu_loop()
-            if choice == "1":
                 continue
-            if choice == "2":
-                return self.classic_menu_loop()
-            break
+            self.out(self.t("unknown_command"))
         self.out(self.t("goodbye"))
         return 0
 
-    def classic_menu_loop(self):
+    def print_help(self):
+        """The work guide: every command + how to work with the tool."""
+        print(terminal.rule())
+        print(terminal.orange("   " + self.disp(self.t("help_title"))))
+        self.out("   scan <url>   —  %s" % self.disp(self.t("help_scan")))
+        self.out("   <url>        —  %s" % self.disp(self.t("help_bare_url")))
+        self.out("   menu         —  %s" % self.disp(self.t("help_menu")))
+        self.out("   about        —  %s" % self.disp(self.t("help_about")))
+        self.out("   lang         —  %s" % self.disp(self.t("help_lang")))
+        self.out("   version      —  %s" % self.disp(self.t("help_version")))
+        self.out("   clear        —  %s" % self.disp(self.t("help_clear")))
+        self.out("   exit         —  %s" % self.disp(self.t("help_exit")))
+        print(terminal.rule())
+        self.out("   %s" % self.disp(self.t("how_to_work")))
+        self.out("   %s" % self.disp(self.t("how_to_steps")))
+        self.out("   %s" % self.disp(self.t("help_tip")))
+        print(terminal.rule())
+
+    @staticmethod
+    def _looks_like_url(line):
+        text = line.strip()
+        if "://" in text:
+            return _valid_url(text)
+        return _valid_url("https://" + text)
+
+    def _scan_command(self, url):
+        """Terms (y) then the mega scan. False = user asked to exit."""
+        try:
+            if not self.accept_terms(url):
+                return True
+            self.opt_mega_scan(url)
+        except NavCommand as nav:
+            if nav.command == "EXIT":
+                return False
+            self.nav.home()
+        except KeyboardInterrupt:
+            self.out(self.t("cancelled"))
+        except ScopeError as exc:
+            print(str(exc))
+            self.out(self.t("not_authorized"))
+            self.pause()
+        except Exception as exc:
+            print("Error: %s" % exc)
+            self.pause()
+        return True
+
+    def classic_menu_loop(self, from_console=False):
         while True:
             self.main_menu()
             try:
@@ -1027,5 +1084,8 @@ class MenuApp:
                 print("Error: %s" % exc)
                 self.pause()
                 continue
-        self.out(self.t("goodbye"))
+        # From the console, exiting the classic menu returns to the
+        # console prompt; otherwise the goodbye ends the app.
+        if not from_console:
+            self.out(self.t("goodbye"))
         return 0

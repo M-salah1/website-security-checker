@@ -1,4 +1,4 @@
-# CONAN FRAMEWORK v5.3 — ULTIMATE CYBER INVESTIGATION SYSTEM 🔍
+# CONAN FRAMEWORK v5.4 — ULTIMATE CYBER INVESTIGATION SYSTEM 🔍
 
 **CONAN DETECTIVE** — منصة تحقيق سيبراني معيارية متعددة اللغات.
 
@@ -6,27 +6,44 @@ Developer: **Hafed Mehdi Salah Eddine** — Algeria 🇩🇿
 GitHub: **M-salah1** — Copyright © 2026
 
 - Python standard library only — no required dependencies
-- **MEGA SCAN by default**: enter a URL once, every module runs together, one detailed report (identity, domain history, admin contact, country, servers, paths, deep tests)
-- 20-option interactive menu (still there: press 0 at the URL prompt, or `python3 conan.py menu`) • 3 languages (العربية / Français / English, RTL)
-- v5.3 Ethical Defender Edition: safe lab, victim protection, defense center, animated reports
+- **Command console**: full welcome page on entry, then a `conan >` prompt — `scan <url>`, `help`, `menu`, `about`, `lang`, `version`, `clear`, `exit`
+- **MEGA SCAN**: `scan <url>` runs every module together, one detailed report (identity, domain history, admin contact, country, servers, paths, deep tests)
+- 20-option interactive menu (via `menu`, or `python3 conan.py menu`) • 3 languages (العربية / Français / English, RTL)
+- v5.4 Ethical Defender Edition: safe lab, victim protection, defense center, animated reports
 - Works on Android Termux, Linux and Windows PowerShell
 
 ## Start
 
 ```bash
-python3 conan.py                        # MEGA SCAN: welcome + language + URL → everything together
+python3 conan.py                        # welcome page + language + console (conan >)
 python3 conan.py menu                   # classic 20-option menu
-python3 conan.py shell                  # interactive shell: conan >
+python3 conan.py shell                  # advanced interactive shell: conan >
 python3 conan.py https://example.com    # direct full scan
 python3 conan.py https://example.com --json
 python3 conan.py --version
 ```
 
-## Entry flow — splash, URL, ethical terms
+## Console — commands & work guide
 
-1. **Splash screen**: a graphical entry screen introducing the tool and its developer — Hafed Mehdi Salah Eddine (Algeria, GitHub M-salah1, FOX COMPANY).
-2. **Enter the site**: type the URL — a bare domain works too (`example.com` → `https://example.com`).
-3. **Ethical terms**: the tool asks whether you really want to continue — you confirm you are an ethical hacker, you audit only your own site or one you have written permission for, and you are responsible for everything under the terms and the law. Type **y** to accept and the work begins; anything else cancels back to the URL prompt.
+After the welcome page and language selection you are at the `conan >` prompt:
+
+| Command | What it does |
+|---|---|
+| `scan <url>` | Mega scan: terms question (type `y`), then everything together — during the scan only `Scanning...` is shown |
+| `<url>` | Same as `scan <url>` — just type the site directly |
+| `help` | The full work guide (all commands + how to work with the tool) |
+| `menu` | Classic 20-option menu (returns to the console afterwards) |
+| `about` | The welcome page again: tool + developer |
+| `lang` | Change language |
+| `version` | Show version |
+| `clear` | Clear the screen |
+| `exit` | Quit |
+
+## Entry flow — welcome, URL, ethical terms
+
+1. **Welcome page**: a complete graphical entry screen introducing the tool and its developer — Hafed Mehdi Salah Eddine (Algeria, GitHub M-salah1, FOX COMPANY) — plus how to work with it.
+2. **Enter the site**: at the console, type `scan example.com` (a bare domain works too).
+3. **Ethical terms**: the tool asks whether you really want to continue — you confirm you are an ethical hacker, you audit only your own site or one you have written permission for, and you are responsible for everything under the terms and the law. Type **y** to accept and the work begins; anything else cancels back to the console.
 
 ## Mega Scan — what the detailed report contains
 
@@ -85,7 +102,7 @@ Conan never attacks an attacker's machine, never launches DDoS, never
 guesses passwords, never bypasses logins, and never shows password or
 session-cookie values.
 
-## v5.3 Design release — animated interface, one-line loader, readable Arabic
+## v5.4 Design release — animated interface, one-line loader, readable Arabic
 
 - **Animated design:** a magnifying-glass sweep intro on startup, a
   coloured numbered menu (orange numbers, green protection-mode line),

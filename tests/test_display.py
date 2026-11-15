@@ -63,8 +63,8 @@ class TestReverseArabic(unittest.TestCase):
 
 class TestSingleLineLoader(unittest.TestCase):
     def test_log_stays_on_the_same_line(self):
-        # With a TTY, log() must not print new lines: the latest message
-        # joins the single animation line instead.
+        # While a scan runs, the loader writes only one line: a spinner
+        # plus "Scanning..." — no phase names, no log lines, no new lines.
         with mock.patch.object(terminal, "is_tty", return_value=True):
             inv = Investigation(enabled=True, total=3)
             self.assertTrue(inv.enabled)
@@ -79,7 +79,9 @@ class TestSingleLineLoader(unittest.TestCase):
                 time.sleep(0.25)  # let one frame draw the latest message
                 inv.done()
             out = buf.getvalue()
-        self.assertIn("[+] Headers done", out)
+        self.assertIn("Scanning", out)
+        self.assertNotIn("[+] Headers done", out)
+        self.assertNotIn("headers", out)
         # Only the final "complete" line ends with a newline.
         self.assertEqual(out.count("\n"), 1)
 

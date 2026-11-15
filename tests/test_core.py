@@ -36,6 +36,10 @@ class TestI18n(unittest.TestCase):
         self.assertEqual(translate("menu_17", "ar"), "المختبر الآمن والتدريب الأخلاقي")
 
     def test_rtl_marker(self):
+        # The RLM marker applies in normal mode; the Termux reverse mode
+        # (a global flag other tests may turn on) prints without it.
+        from conan.core.i18n import set_reverse_arabic
+        set_reverse_arabic(False)
         i = I18n("ar")
         self.assertTrue(i.rtl("x").startswith("\u200f"))
         i.set("en")
