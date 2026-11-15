@@ -19,6 +19,7 @@ import time
 from ..core import engine
 from ..core.scope import ScopeError
 from ..core.timeout import call_with_timeout
+from ..intelligence import ai_brain as ai_brain_mod
 from ..intelligence import contacts as contacts_mod
 from ..intelligence import history as history_mod
 from ..intelligence import learning as learning_mod
@@ -36,7 +37,7 @@ DEEP_TESTS = [
     "core-audit", "domain-history", "certificate-history", "admin-contact",
     "country-servers", "deep-paths", "http-methods", "redirect-chain",
     "js-api-reverse", "real-ip", "published-contacts", "permissions",
-    "certificates", "ports", "adaptive-probe", "learning",
+    "certificates", "ports", "adaptive-probe", "learning", "ai-brain",
 ]
 
 
@@ -126,7 +127,7 @@ def mega_scan(url, scope=None, settings=None, timeout=15, progress=None):
                     timeout=timeout, progress=tick),
                 150, _core_fallback)
     scan["kind"] = "mega-scan"
-    scan["tool"] = "CONAN FRAMEWORK v5.8"
+    scan["tool"] = "CONAN FRAMEWORK v5.9"
     scan["deep_tests"] = list(DEEP_TESTS)
     scan["scope"] = {"kind": "authorized" if authorized else "passive",
                      "authorized": authorized}
@@ -240,4 +241,13 @@ def mega_scan(url, scope=None, settings=None, timeout=15, progress=None):
     except Exception as exc:
         scan["learned_profile"] = {"error": str(exc)}
         scan["learned_changes"] = []
+
+    # AI Brain: reason over the whole scan like an ethical hacker —
+    # attack chains, priorities, verdict, next tests.
+    tick("ai-brain")
+    try:
+        lang = (settings.get("language") or "ar") if settings else "ar"
+        scan["ai_brain"] = ai_brain_mod.analyze(scan, lang)
+    except Exception as exc:
+        scan["ai_brain"] = {"error": str(exc)}
     return scan

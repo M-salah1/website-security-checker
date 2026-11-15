@@ -1,4 +1,4 @@
-# CONAN FRAMEWORK v5.8 — ULTIMATE CYBER INVESTIGATION SYSTEM 🔍
+# CONAN FRAMEWORK v5.9 — ULTIMATE CYBER INVESTIGATION SYSTEM 🔍
 
 **CONAN DETECTIVE** — منصة تحقيق سيبراني معيارية متعددة اللغات.
 
@@ -191,6 +191,35 @@ nothing is sent.
   cannot be observed from outside. Any tool that claims to show them
   for a site it does not manage is inventing numbers. For your own
   site, connect your own analytics or server logs instead.
+
+## Conan AI Brain — the ethical hacker's reasoning (v5.9)
+
+After every mega scan, the AI Brain reads the whole result the way a
+human ethical hacker would:
+
+- **Attack chains:** it correlates separate findings into complete
+  paths ("no CSP + cookie without HttpOnly → session theft via XSS",
+  "no HTTPS + cookie without Secure → session hijacking on the wire",
+  "open admin ports → a direct door into the server", clickjacking,
+  server fingerprinting, open CORS + API). Each chain names its
+  evidence and how to stop it.
+- **Verdict:** a plain-language conclusion — the most dangerous path,
+  and the first fix to apply.
+- **Priorities:** findings ranked by exploitability (severity ×
+  confidence), so you fix what an attacker would use first.
+- **Next tests:** an adaptive plan — authentication audit when forms
+  exist, API audit when endpoints exist, full port scan when admin
+  ports are open, session test after a cookie fix.
+- **New since last scan:** anything that appeared since the previous
+  scan (from the Site Brain profile) is flagged first.
+
+Honest note: this is a smart expert engine that reasons from the
+tool's own observed evidence — it is not a large language model. No
+LLM can run offline inside a stdlib-only Termux tool. Connecting an
+external AI service with the user's own API key is a possible later
+step; the key would live only in the user's local `.env`. The Brain
+never executes an attack: it describes paths so the defender can
+close them.
 
 ## Scope and authorization — read this first
 

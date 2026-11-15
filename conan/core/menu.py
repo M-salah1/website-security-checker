@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Main menu + smart investigation wizard for CONAN FRAMEWORK v5.8.
+"""Main menu + smart investigation wizard for CONAN FRAMEWORK v5.9.
 
 Welcome screen (full page: tool, developer, how-to) -> language
 selection -> command console (`conan >`): scan <url>, help, menu,
@@ -619,9 +619,39 @@ class MenuApp:
                 self.out("   %s %s" % (mark, self.disp(ch.get("detail", ""))))
         else:
             self.out("   %s" % self.disp(self.t("no_changes")))
-        # 12. Deep tests + findings
+        # 12. Conan AI Brain — the detective's reasoning
         print(terminal.rule())
-        self.out("12. %s" % self.disp(self.t("deep_tests")))
+        self.out("12. %s" % self.disp(self.t("ai_brain")))
+        brain = scan.get("ai_brain") or {}
+        if brain.get("verdict"):
+            self.out("   %s" % self.disp(brain["verdict"]))
+        if brain.get("first_fix"):
+            self.out("   %s" % self.disp(brain["first_fix"]))
+        for note in (brain.get("new_since_last") or [])[:3]:
+            self.out("   ! %s" % self.disp(note))
+        if brain.get("chains"):
+            self.out("   %s:" % self.disp(self.t("attack_chains")))
+            for chain in brain["chains"][:3]:
+                self.out("   [%s] %s" % (chain["severity"].upper(),
+                                         self.disp(chain["title"])))
+                self.out("      %s" % self.disp(chain["story"]))
+                if chain.get("evidence"):
+                    self.out("      %s: %s" % (self.disp(self.t("evidence")),
+                                               ", ".join(chain["evidence"])))
+                self.out("      %s: %s" % (self.disp(self.t("how_to_stop")),
+                                           self.disp(chain["stop"])))
+        if brain.get("priorities"):
+            self.out("   %s:" % self.disp(self.t("priorities")))
+            for p in brain["priorities"][:5]:
+                self.out("   [%s] %s" % (p["severity"].upper(),
+                                         self.disp(p["name"])))
+        if brain.get("next_tests"):
+            self.out("   %s:" % self.disp(self.t("next_tests")))
+            for test in brain["next_tests"][:4]:
+                self.out("   → %s" % self.disp(test))
+        # 13. Deep tests + findings
+        print(terminal.rule())
+        self.out("13. %s" % self.disp(self.t("deep_tests")))
         if scan.get("phase_timeouts"):
             self.out("   %s: %s" % (self.disp(self.t("phase_timeout")),
                                    ", ".join(scan["phase_timeouts"])))
@@ -685,7 +715,7 @@ class MenuApp:
             findings += vuln_mod.test_file_upload(forms.get("forms", []), url)
         finally:
             inv.done()
-        scan = {"tool": "CONAN FRAMEWORK v5.8", "target": url,
+        scan = {"tool": "CONAN FRAMEWORK v5.9", "target": url,
                 "kind": "vulnerability-audit",
                 "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
