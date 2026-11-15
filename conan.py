@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-المحقق كونان - Conan Detective v2.1
+المحقق كونان - Conan Detective v2.1.1
 أداة فحص أمان دفاعية سلبية (Passive) لمواقع الويب - Termux
 Python standard library فقط، بدون تثبيت مكتبات.
-المطور: Hafed Mehdi Salaj Eddine — الجزائر
+المطور: Hafed Mehdi Salah Eddine — الجزائر
 
 ماذا تفحص؟
   1. DNS والعنوان IP والـ Reverse DNS
@@ -46,9 +46,9 @@ import urllib.parse
 import urllib.request
 
 
-VERSION = "2.1"
+VERSION = "2.1.1"
 TOOL_NAME = "المحقق كونان - Conan Detective"
-DEVELOPER_NAME = "Hafed Mehdi Salaj Eddine"
+DEVELOPER_NAME = "Hafed Mehdi Salah Eddine"
 DEVELOPER_COUNTRY = "الجزائر 🇩🇿"
 DEVELOPER_GITHUB = "M-salah1"
 SYSTEM_TAGLINE = "نظام فحص قوي — دقيق، سريع، ويعمل بقوة"
