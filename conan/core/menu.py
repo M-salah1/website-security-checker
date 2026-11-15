@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Main menu + smart investigation wizard for CONAN FRAMEWORK v5.2.
+"""Main menu + smart investigation wizard for CONAN FRAMEWORK v5.3.
 
 Welcome screen -> language selection (remembered) -> MEGA SCAN by
 default: enter a URL once and every module runs together, then a
@@ -62,7 +62,18 @@ def _valid_url(text):
     text = (text or "").strip()
     try:
         p = urllib.parse.urlparse(text)
-        return p.scheme in ("http", "https") and bool(p.hostname)
+        if p.scheme not in ("http", "https") or not p.hostname:
+            return False
+        host = p.hostname
+        if host == "localhost":
+            return True
+        try:
+            ipaddress.ip_address(host)
+            return True
+        except ValueError:
+            pass
+        # A bare word without a dot is not a site (e.g. "not-a-url").
+        return "." in host
     except Exception:
         return False
 
@@ -131,6 +142,10 @@ class MenuApp:
     def ask_url(self):
         while True:
             url = self.ask(self.t("enter_url") + "  (" + self.t("back_option") + ")")
+            url = url.strip()
+            # Bare domains are accepted too: example.com -> https://example.com
+            if url and "://" not in url:
+                url = "https://" + url
             if _valid_url(url):
                 return url.rstrip("/")
             self.out(self.t("invalid_url"))
@@ -175,6 +190,57 @@ class MenuApp:
         self.out("   %s: Algeria 🇩🇿" % self.t("country"))
         print(terminal.grey("   CONAN FRAMEWORK v%s  •  Copyright © 2026" % __version__))
         print()
+
+    def show_splash(self):
+        """Strong graphical entry screen: what the tool is, who made it."""
+        print(terminal.rule())
+        print(terminal.orange("   ╔══════════════════════════════════════════════╗"))
+        print(terminal.orange("   ║   🔍  CONAN FRAMEWORK v%-4s               ║" % __version__))
+        print(terminal.orange("   ║   " + self.disp(self.t("app_title")) + "                          ║"))
+        print(terminal.orange("   ╚══════════════════════════════════════════════╝"))
+        print(terminal.green("   🛡  " + self.disp(self.t("shield_line"))))
+        print(terminal.rule())
+        self.out("   ◆ %s" % self.disp(self.t("about_tool")))
+        self.out("   %s" % self.disp(self.t("about_tool_text")))
+        print()
+        self.out("   ◆ %s" % self.disp(self.t("about_developer")))
+        self.out("   %s" % self.disp("Hafed Mehdi Salah Eddine"))
+        self.out("   %s" % self.disp(self.t("developer_role")))
+        self.out("   GitHub: M-salah1")
+        self.out("   %s" % self.disp(self.t("developer_org")))
+        print(terminal.grey("   CONAN FRAMEWORK v%s  •  Copyright © 2026" % __version__))
+        print(terminal.rule())
+        self.pause()
+
+    def accept_terms(self, url):
+        """Ethical-use terms: the user confirms with y, then work begins.
+
+        Returns True on acceptance (and records the authorization for this
+        target, so the deep tests run); False on decline, which returns
+        to the URL prompt. EXIT navigation is re-raised.
+        """
+        print(terminal.rule())
+        print(terminal.orange("   ⚖  " + self.disp(self.t("terms_title"))))
+        self.out("   • %s" % self.disp(self.t("terms_1")))
+        self.out("   • %s" % self.disp(self.t("terms_2")))
+        self.out("   • %s" % self.disp(self.t("terms_3")))
+        self.out("   • %s" % self.disp(self.t("terms_4")))
+        print(terminal.rule())
+        try:
+            ans = self.ask(self.t("terms_accept"))
+        except NavCommand as nav:
+            if nav.command == "EXIT":
+                raise
+            return False
+        if ans.strip().lower() in ("y", "yes", "نعم", "oui", "o"):
+            try:
+                self.scope.authorize(url, "authorized")
+            except Exception:
+                pass
+            self.out(self.t("terms_accepted"))
+            return True
+        self.out(self.t("terms_declined"))
+        return False
 
     def language_screen(self):
         self.out(self.t("choose_language") + ":")
@@ -384,10 +450,11 @@ class MenuApp:
     def opt_website_investigation(self):
         self.nav.push("website")
         url = self.ask_url()
+        if not self.accept_terms(url):
+            return
         # Passive modules run without authorization; only the active parts
         # (paths discovery, file inspection) need it — website.py handles
         # that by skipping them when unauthorized.
-        pass
         inv = self._anim(total=12)
         inv.start()
         try:
@@ -428,7 +495,7 @@ class MenuApp:
             findings += vuln_mod.test_file_upload(forms.get("forms", []), url)
         finally:
             inv.done()
-        scan = {"tool": "CONAN FRAMEWORK v5.2", "target": url,
+        scan = {"tool": "CONAN FRAMEWORK v5.3", "target": url,
                 "kind": "vulnerability-audit",
                 "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -850,11 +917,11 @@ class MenuApp:
         self.nav.push("home")
         self.welcome()
         self.language_screen()
+        self.show_splash()
         if start_menu:
             return self.classic_menu_loop()
-        # Default: the big scan first — enter a URL once, everything runs
-        # together, then the detailed report. 0 at the URL prompt opens
-        # the classic menu instead.
+        # Default: the big scan first — enter a URL once, accept the
+        # ethical-use terms with y, and everything runs together.
         while True:
             try:
                 url = self.ask_url()
@@ -863,6 +930,8 @@ class MenuApp:
                     break
                 return self.classic_menu_loop()
             try:
+                if not self.accept_terms(url):
+                    continue
                 self.opt_mega_scan(url)
             except NavCommand as nav:
                 if nav.command == "EXIT":

@@ -1,4 +1,4 @@
-# CONAN FRAMEWORK v5.2 — ULTIMATE CYBER INVESTIGATION SYSTEM 🔍
+# CONAN FRAMEWORK v5.3 — ULTIMATE CYBER INVESTIGATION SYSTEM 🔍
 
 **CONAN DETECTIVE** — منصة تحقيق سيبراني معيارية متعددة اللغات.
 
@@ -8,7 +8,7 @@ GitHub: **M-salah1** — Copyright © 2026
 - Python standard library only — no required dependencies
 - **MEGA SCAN by default**: enter a URL once, every module runs together, one detailed report (identity, domain history, admin contact, country, servers, paths, deep tests)
 - 20-option interactive menu (still there: press 0 at the URL prompt, or `python3 conan.py menu`) • 3 languages (العربية / Français / English, RTL)
-- v5.2 Ethical Defender Edition: safe lab, victim protection, defense center, animated reports
+- v5.3 Ethical Defender Edition: safe lab, victim protection, defense center, animated reports
 - Works on Android Termux, Linux and Windows PowerShell
 
 ## Start
@@ -21,6 +21,12 @@ python3 conan.py https://example.com    # direct full scan
 python3 conan.py https://example.com --json
 python3 conan.py --version
 ```
+
+## Entry flow — splash, URL, ethical terms
+
+1. **Splash screen**: a graphical entry screen introducing the tool and its developer — Hafed Mehdi Salah Eddine (Algeria, GitHub M-salah1, FOX COMPANY).
+2. **Enter the site**: type the URL — a bare domain works too (`example.com` → `https://example.com`).
+3. **Ethical terms**: the tool asks whether you really want to continue — you confirm you are an ethical hacker, you audit only your own site or one you have written permission for, and you are responsible for everything under the terms and the law. Type **y** to accept and the work begins; anything else cancels back to the URL prompt.
 
 ## Mega Scan — what the detailed report contains
 
@@ -79,7 +85,7 @@ Conan never attacks an attacker's machine, never launches DDoS, never
 guesses passwords, never bypasses logins, and never shows password or
 session-cookie values.
 
-## v5.2 Design release — animated interface, one-line loader, readable Arabic
+## v5.3 Design release — animated interface, one-line loader, readable Arabic
 
 - **Animated design:** a magnifying-glass sweep intro on startup, a
   coloured numbered menu (orange numbers, green protection-mode line),
