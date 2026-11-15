@@ -37,6 +37,16 @@ CREATE TABLE IF NOT EXISTS availability (
     status INTEGER,
     total_ms INTEGER
 );
+CREATE TABLE IF NOT EXISTS module_runs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    scan_id INTEGER NOT NULL,
+    module TEXT NOT NULL,
+    status TEXT NOT NULL,
+    duration_s REAL,
+    retries INTEGER,
+    error TEXT,
+    FOREIGN KEY (scan_id) REFERENCES scans (id)
+);
 """
 
 
@@ -73,14 +83,28 @@ def save_scan(db_path, scan, base_dir=None):
     enc = encrypt_text(key, payload)
     conn = sqlite3.connect(db_path)
     try:
+        conn.executescript(
+            "CREATE TABLE IF NOT EXISTS module_runs ("
+            "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            " scan_id INTEGER NOT NULL, module TEXT NOT NULL,"
+            " status TEXT NOT NULL, duration_s REAL, retries INTEGER,"
+            " error TEXT);")
         cur = conn.execute(
             "INSERT INTO scans (target, started_at, finished_at, duration_s,"
             " score, grade, health, report_enc) VALUES (?,?,?,?,?,?,?,?)",
             (scan.get("target"), scan.get("started_at"), scan.get("finished_at"),
              scan.get("duration_s"), scan.get("score"), scan.get("grade"),
              (scan.get("health") or {}).get("classification"), enc))
+        scan_id = cur.lastrowid
+        for name, run in (scan.get("module_status") or {}).items():
+            conn.execute(
+                "INSERT INTO module_runs (scan_id, module, status,"
+                " duration_s, retries, error) VALUES (?,?,?,?,?,?)",
+                (scan_id, name, run.get("status"),
+                 run.get("duration_s"), run.get("retries", 0),
+                 (run.get("error") or "")[:500]))
         conn.commit()
-        return cur.lastrowid
+        return scan_id
     finally:
         conn.close()
 

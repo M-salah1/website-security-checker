@@ -1,4 +1,4 @@
-# CONAN FRAMEWORK v6.0 — ULTIMATE CYBER INVESTIGATION SYSTEM 🔍
+# CONAN FRAMEWORK v7.0 — ULTIMATE CYBER INVESTIGATION SYSTEM 🔍
 
 **CONAN DETECTIVE** — منصة تحقيق سيبراني معيارية متعددة اللغات.
 
@@ -339,13 +339,73 @@ tests/                   unittest suite (offline + live, skips gracefully)
 requirements.txt         stdlib only (optional deps commented)
 ```
 
+## CONAN 2.0 — Deep Intelligence Engine (v7.0)
+
+Why: the v5.9 scan of `https://www.aadl.dz/` in Termux returned
+**0%, Grade ?, Confidence 0%, 549.7s, 25/29 phases** — four phases
+timed out, most fields UNKNOWN, zero findings. The tool reported a
+0% score for a site it had not measured. Root causes, all found in
+the code and fixed here (nothing hidden, nothing removed):
+
+1. **The investigation pool waited for hung workers.** `investigate_website`
+   ran its 8 modules in a `with ThreadPoolExecutor` block — and `with`
+   waits for every worker at exit, even one whose future already timed
+   out. The crawler (up to 20 pages, 15s each, 600s hard bound) blocked
+   the whole audit. Now: explicit pool + `shutdown(wait=False)`, crawl
+   capped at 12 pages / 8s per page / 90s total.
+2. **Path probing was fully sequential** — 60 paths × up to 15s =
+   up to 15 minutes. Now parallel (8 workers, bounded).
+3. **Domain identity was fully sequential** — WHOIS + DNS + TLS +
+   homepage + geo + CT log, one after another. Now parallel.
+4. **Port scanning connected by hostname** — one DNS lookup per port,
+   unbounded by the socket timeout. Now the host is resolved once and
+   every connect goes to the IP directly.
+5. **The mega scan ran everything sequentially** — total time was the
+   SUM of every phase deadline (150+40+90+90… = 549s). Now independent
+   phases run in parallel under one global budget (default 300s,
+   `scan_budget_s` in settings): total time is the slowest phase,
+   never the sum.
+6. **The score fallback lied.** A failed core audit returned score 0.
+   Now a failed audit, or coverage below 50%, gives **INCOMPLETE**
+   (score None, grade INCOMPLETE) with coverage shown separately —
+   never a misleading 0%.
+7. **The progress count was wrong by construction.** Only 25 of the 29
+   DEEP_TESTS phases were ever ticked, so a complete run read 25/29.
+   Phases are now counted by distinct name (a phase ticked twice counts
+   once), sub-phases are ticked when their parent finishes, and a
+   complete run reads 29/29.
+
+What v7.0 adds, per the CONAN 2.0 spec:
+
+- **Per-module status** — every phase records `completed / timeout /
+  error / not_tested` with duration, retry count and error, shown in
+  the report (section 13) and stored in the SQLite `module_runs`
+  table (new migration: `CREATE TABLE IF NOT EXISTS module_runs`).
+- **Retries with backoff** — a phase that fails FAST (refused
+  connection, DNS error) is retried once after a 2s backoff; a
+  timeout is never retried.
+- **Resume** — partial results are saved after every phase to
+  `conan-partial-<domain>.json`; a fresh partial scan for the same
+  target is resumed, not restarted, and the report says which phases
+  were resumed. A complete scan deletes its partial file.
+- **Live progress** — the one-line loader now shows the current module
+  and elapsed / estimated remaining time, still on a single line.
+- **Coverage** — `scan["coverage"]` (completed/total/percent/missing)
+  is shown next to the score; the AI Brain says plainly when a scan
+  is incomplete instead of printing a score.
+
+Verified: example.com mega scan in the sandbox now finishes in
+**42s** (was 549s for aadl.dz), **29/29 phases, 0 timeouts, score
+28% F with 88% confidence and 80% coverage** — a real measurement.
+Full suite: **144 tests, all passing**.
+
 ## Tests
 
 ```bash
 python3 -m unittest discover -s tests -v
 ```
 
-Test results (2026-11-15, sandbox): **52 tests, all passing** — i18n key
+Test results (2026-11-15, sandbox): **144 tests, all passing** — i18n key
 parity across 3 languages, navigation stack, persistent sessions, cases +
 evidence export, redaction, scope, encryption vectors (FIPS-197 AES-256 +
 NIST GCM test case 3), phishing similarity/homograph, headers/cookies,

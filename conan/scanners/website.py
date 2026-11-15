@@ -52,7 +52,12 @@ def investigate_website(url, scope=None, max_pages=20, timeout=15,
             except Exception:
                 pass
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+    # Parallel batch. NOTE: the pool is shut down WITHOUT waiting: a
+    # hung worker (e.g. the crawl on a slow site) must never block the
+    # whole investigation — `with ThreadPoolExecutor` used to wait for
+    # it, which is what froze scans for minutes.
+    pool = concurrent.futures.ThreadPoolExecutor(max_workers=4)
+    try:
         futs = {
             "health": pool.submit(_safe, health_mod.check_health, url, 1, timeout),
             "dns": pool.submit(_safe, dns_mod.analyze_dns, host),
@@ -60,7 +65,9 @@ def investigate_website(url, scope=None, max_pages=20, timeout=15,
             "headers": pool.submit(_safe, headers_mod.analyze_headers, url, timeout),
             "cookies": pool.submit(_safe, cookies_mod.analyze_cookies, url, timeout),
             "phishing": pool.submit(_safe, phishing_mod.analyze_phishing, url, None, timeout),
-            "discovery": pool.submit(_safe, disc_mod.crawl, url, 1, max_pages, timeout, (), 0.3),
+            "discovery": pool.submit(
+                _safe, disc_mod.crawl, url, 1, min(max_pages, 12),
+                min(timeout, 8), (), 0.2),
             "forms": pool.submit(_safe, forms_mod.fetch_forms, url, timeout),
         }
         results = {}
@@ -70,6 +77,10 @@ def investigate_website(url, scope=None, max_pages=20, timeout=15,
             except Exception as exc:
                 results[name] = {"error": str(exc)}
             tick(name)
+            if name == "dns":
+                tick("dnssec")
+    finally:
+        pool.shutdown(wait=False, cancel_futures=True)
 
     html = http_get(url, timeout=timeout)["body"]
     api_refs = _safe(api_mod.discover_api, url, html)
@@ -79,7 +90,7 @@ def investigate_website(url, scope=None, max_pages=20, timeout=15,
     tick("exposure")
     paths = _safe(paths_mod.discover_paths, url, None, timeout, 0.2, 30) \
         if authorized else []
-    tick("paths")
+    tick("deep-paths")
     vuln = _safe(vuln_mod.run_vuln_tests, url, html, {}, results["forms"].get("forms", []),
                  (results["cookies"].get("cookies", [])) if isinstance(results["cookies"], dict) else [])
     tick("vulnerabilities")
@@ -95,8 +106,9 @@ def investigate_website(url, scope=None, max_pages=20, timeout=15,
     findings = _dedupe(sort_findings(findings))
 
     duration = round(time.time() - t0, 1)
+    audit_ok = isinstance(audit, dict) and not audit.get("error")
     return {
-        "tool": "CONAN FRAMEWORK v6.0",
+        "tool": "CONAN FRAMEWORK v7.0",
         "target": url, "kind": "website-investigation",
         "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - duration)),
         "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -107,9 +119,11 @@ def investigate_website(url, scope=None, max_pages=20, timeout=15,
         "discovery": results.get("discovery"), "forms": results.get("forms"),
         "api": api_refs, "exposure": exposure, "paths": paths,
         "audit": audit, "findings": findings,
-        "score": audit.get("score") if isinstance(audit, dict) else 0,
-        "grade": audit.get("grade") if isinstance(audit, dict) else "F",
-        "confidence": audit.get("confidence", 100) if isinstance(audit, dict) else 0,
+        # A failed core audit is INCOMPLETE, never a 0% score: 0% would
+        # claim the site is maximally insecure when nothing was measured.
+        "score": audit.get("score") if audit_ok else None,
+        "grade": audit.get("grade") if audit_ok else "INCOMPLETE",
+        "confidence": audit.get("confidence", 100) if audit_ok else 0,
         "checks_count": len(audit.get("checks", [])) + 12 if isinstance(audit, dict) else 12,
         "severity_distribution": count_by_severity(findings),
         "recommendations": list((audit.get("top_fixes") or []) if isinstance(audit, dict) else [])[:8],

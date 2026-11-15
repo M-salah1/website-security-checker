@@ -105,7 +105,10 @@ class TestMegaScan(unittest.TestCase):
         self.assertIn("deep_tests", scan)
         self.assertTrue(len(scan["deep_tests"]) >= 15)
         self.assertIn("findings", scan)
-        self.assertGreaterEqual(scan["score"], 0)
+        # The lab is deliberately vulnerable: a real measured score of
+        # 0 is honest; only a failed measurement is INCOMPLETE (None).
+        self.assertTrue(scan["score"] is None or scan["score"] >= 0)
+        self.assertIn("coverage", scan)
         # Local lab: no public history, deep paths need authorization.
         self.assertEqual(scan["history"]["previous_names"], "UNKNOWN")
         self.assertEqual(scan["deep_paths"], [])

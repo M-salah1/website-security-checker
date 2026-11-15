@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Interactive shell for CONAN FRAMEWORK v6.0.
+"""Interactive shell for CONAN FRAMEWORK v7.0.
 
 Commands: help, about, version, clear, exit, scan, discover, paths, headers,
 tls, cookies, forms, api, phishing, health, xss, sqli, csrf, auth-test,
@@ -216,7 +216,7 @@ class Shell:
         self.last_target = url
         t0 = time.time()
         inv = self._anim(total=11, quiet=quiet)
-        scan = {"tool": "CONAN FRAMEWORK v6.0", "target": url,
+        scan = {"tool": "CONAN FRAMEWORK v7.0", "target": url,
                 "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 "language": _lang(), "findings": []}
         inv.start()
@@ -329,10 +329,17 @@ class Shell:
 
     def print_summary(self, scan):
         print(terminal.rule())
-        print(terminal.orange("🔍 CONAN FRAMEWORK v6.0 — %s" % scan["target"]))
-        print("Score: %s%%  Grade: %s  Confidence: %s%%  Duration: %s s" % (
-            scan.get("score"), scan.get("grade"), scan.get("confidence"),
-            scan.get("duration_s")))
+        print(terminal.orange("🔍 CONAN FRAMEWORK v7.0 — %s" % scan["target"]))
+        if scan.get("score") is None:
+            cov = (scan.get("coverage") or {}).get("percent")
+            print("Score: INCOMPLETE  Grade: INCOMPLETE  Confidence: 0%%  "
+                  "Duration: %s s  Coverage: %s%%" % (
+                      scan.get("duration_s"),
+                      cov if cov is not None else "?"))
+        else:
+            print("Score: %s%%  Grade: %s  Confidence: %s%%  Duration: %s s" % (
+                scan.get("score"), scan.get("grade"), scan.get("confidence"),
+                scan.get("duration_s")))
         print("Health: %s  Phishing: %s (%s/100)" % (
             (scan.get("health") or {}).get("classification"),
             (scan.get("phishing") or {}).get("classification"),
@@ -799,7 +806,7 @@ def _raw_cookies(headers):
 def main(argv=None):
     ap = argparse.ArgumentParser(
         prog="conan",
-        description="CONAN FRAMEWORK v6.0 — Advanced Website Security Detective")
+        description="CONAN FRAMEWORK v7.0 — Advanced Website Security Detective")
     ap.add_argument("url", nargs="?", help="Target URL to scan")
     ap.add_argument("--lang", choices=["en", "fr", "ar"], default=None)
     ap.add_argument("--json", action="store_true", help="Print the unified JSON report")

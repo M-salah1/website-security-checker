@@ -42,7 +42,7 @@ def crawl(start_url, max_depth=2, max_pages=50, timeout=15, excluded=(),
     seen = {}
     queue = [(start_url, 0, "seed")]
     pages, scripts, api_refs = [], [], []
-    t_end = time.time() + 600  # hard safety bound: 10 minutes
+    t_end = time.time() + 90  # hard safety bound: 90 seconds, never more
     while queue and len(pages) < max_pages and time.time() < t_end:
         url, depth, source = queue.pop(0)
         if url in seen:

@@ -33,6 +33,7 @@ TEXT = {
         "verdict_strong": "الموقع قوي دفاعياً: لم أجد مسار هجوم متكامل. أخطر ما وجدته هو: %s",
         "verdict_weak": "الموقع ضعيف: أخطر مسار هجوم هو: %s",
         "verdict_none": "لم أجد مسار هجوم متكاملاً في هذه النتائج، لكن النتيجة العامة (%s%%) تستحق المراجعة.",
+        "verdict_incomplete": "الفحص غير مكتمل — لم تُقَس معظم الوحدات، لذلك لا يمكن إعطاء نتيجة أمان. أعد الفحص وستظهر النتيجة الحقيقية.",
         "first_fix": "أول إصلاح: %s",
         "priority": "الأولويات",
         "chains": "مسارات الهجوم المحتملة",
@@ -43,6 +44,7 @@ TEXT = {
         "verdict_strong": "The site is defensively strong: I found no complete attack path. The most dangerous thing found is: %s",
         "verdict_weak": "The site is weak: the most dangerous attack path is: %s",
         "verdict_none": "I found no complete attack path in these results, but the overall score (%s%%) deserves a review.",
+        "verdict_incomplete": "The scan is incomplete — most modules could not be measured, so no security score can be given. Re-run the scan and the real score will appear.",
         "first_fix": "First fix: %s",
         "priority": "Priorities",
         "chains": "Possible attack paths",
@@ -53,6 +55,7 @@ TEXT = {
         "verdict_strong": "Le site est défensivement solide : je n'ai trouvé aucun chemin d'attaque complet. Le plus dangereux est : %s",
         "verdict_weak": "Le site est faible : le chemin d'attaque le plus dangereux est : %s",
         "verdict_none": "Je n'ai trouvé aucun chemin d'attaque complet, mais le score global (%s%%) mérite un examen.",
+        "verdict_incomplete": "Le scan est incomplet — la plupart des modules n'ont pas pu être mesurés, donc aucun score de sécurité ne peut être donné. Relancez le scan et le vrai score apparaîtra.",
         "first_fix": "Premier correctif : %s",
         "priority": "Priorités",
         "chains": "Chemins d'attaque possibles",
@@ -295,10 +298,14 @@ def analyze(scan, lang="ar"):
     if chains:
         top = chains[0]
         score = scan.get("score")
-        if isinstance(score, (int, float)) and score >= 70:
+        if score is None:
+            verdict = labels["verdict_incomplete"]
+        elif isinstance(score, (int, float)) and score >= 70:
             verdict = labels["verdict_strong"] % top["title"]
         else:
             verdict = labels["verdict_weak"] % top["title"]
+    elif scan.get("score") is None:
+        verdict = labels["verdict_incomplete"]
     elif priorities:
         verdict = labels["verdict_none"] % (scan.get("score"))
     else:

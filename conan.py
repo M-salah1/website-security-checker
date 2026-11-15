@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""CONAN FRAMEWORK v6.0 — ULTIMATE CYBER INVESTIGATION SYSTEM (المحقق كونان).
+"""CONAN FRAMEWORK v7.0 — ULTIMATE CYBER INVESTIGATION SYSTEM (المحقق كونان).
 
 Launcher. The real code lives in the `conan/` package (same directory).
 This file only loads the package explicitly (the file and the package share

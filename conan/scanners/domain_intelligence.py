@@ -47,19 +47,60 @@ def ct_log_domains(domain, timeout=12, limit=50):
 
 
 def investigate_domain(domain, timeout=12):
+    """Full deep-identity profile. Never raises.
+
+    The six lookups (WHOIS, DNS, TLS, homepage, geo, CT log) run in
+    parallel: sequentially they summed to over a minute on slow
+    networks, which is what timed the whole module out.
+    """
+    import concurrent.futures
+
     domain = (domain or "").strip().lower().lstrip("www.")
-    whois = engine.get_whois(domain)
-    dns = engine.resolve_dns(domain)
-    tls = engine.check_tls(domain)
-    cdn = None
-    try:
+
+    def _whois():
+        return engine.get_whois(domain)
+
+    def _dns():
+        return engine.resolve_dns(domain)
+
+    def _tls():
+        return engine.check_tls(domain)
+
+    def _home():
         r = http_get("https://%s/" % domain, timeout=timeout)
         lower = {str(k).lower(): v for k, v in dict(r["headers"]).items()}
-        cdn = engine.detect_tech(lower, r["body"]) if hasattr(engine, "detect_tech") else []
-        server = lower.get("server", "")
-    except Exception:
-        r = None
-        server = ""
+        tech = engine.detect_tech(lower, r["body"]) \
+            if hasattr(engine, "detect_tech") else []
+        return {"server": lower.get("server", ""), "tech": tech}
+
+    def _ct():
+        return ct_log_domains(domain, timeout=timeout)
+
+    pool = concurrent.futures.ThreadPoolExecutor(max_workers=6)
+    try:
+        futs = {
+            "whois": pool.submit(_whois),
+            "dns": pool.submit(_dns),
+            "tls": pool.submit(_tls),
+            "home": pool.submit(_home),
+            "ct": pool.submit(_ct),
+        }
+        out = {}
+        for name, fut in futs.items():
+            try:
+                out[name] = fut.result(timeout=timeout + 5)
+            except Exception:
+                out[name] = None
+    finally:
+        pool.shutdown(wait=False, cancel_futures=True)
+
+    whois = out.get("whois") or {}
+    dns = out.get("dns") or {}
+    tls = out.get("tls") or {}
+    home = out.get("home") or {}
+    ct = out.get("ct") or {}
+    server = home.get("server", "")
+    cdn = home.get("tech") or []
     asn = {}
     if dns.get("ips"):
         try:
@@ -68,7 +109,6 @@ def investigate_domain(domain, timeout=12):
                    "hosting": g.get("hosting")}
         except Exception:
             asn = {}
-    ct = ct_log_domains(domain, timeout=timeout)
     org = {
         "official_name": whois.get("org") or "UNKNOWN",
         "official_website": domain,

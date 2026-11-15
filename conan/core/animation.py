@@ -80,6 +80,7 @@ class Investigation:
             and not os.environ.get("NO_COLOR")
         self.total = max(1, total)
         self.done_count = 0
+        self.done_names = set()
         self.current = ""
         self.last_log = ""
         self._stop = threading.Event()
@@ -103,13 +104,29 @@ class Investigation:
                 self._frame += 1
             spin = SPINNER[frame % len(SPINNER)]
             # While a scan runs, the tool writes only this one line:
-            # spinner + "Scanning..." with animated dots and the real
+            # spinner + "Scanning..." with animated dots, the real
             # progress percentage (completed phases / total phases,
-            # capped at 99% until the scan finishes). Phase names and
-            # log messages are tracked internally, never printed.
+            # capped at 99% until the scan finishes), the current
+            # module, and elapsed / estimated remaining time. Phase
+            # names and log messages are tracked internally, never
+            # printed as separate lines.
             dots = "." * (1 + (frame // 4) % 3)
+            with self._lock:
+                # Compute the percentage inline: percent() takes the
+                # same lock, so calling it here would deadlock.
+                pct = min(99, int(100 * self.done_count / self.total))
+                current = self.current
+                done = self.done_count
+            elapsed = time.time() - self.started_at if self.started_at else 0
+            eta = ""
+            if done and done < self.total and elapsed > 1:
+                remaining = elapsed / done * (self.total - done)
+                eta = " ~%ds left" % int(remaining)
             line = "\r\x1b[K%s Scanning%s %d%%" % (
-                terminal.orange(spin), dots, self.percent())
+                terminal.orange(spin), dots, pct)
+            if current:
+                line += " — %s" % current[:24]
+            line += " %ds%s" % (int(elapsed), eta)
             try:
                 sys.stdout.write(line)
                 sys.stdout.flush()
@@ -129,9 +146,15 @@ class Investigation:
             return min(99, int(100 * self.done_count / self.total))
 
     def phase(self, name):
-        """Mark one real phase as done and move to the next."""
+        """Mark one real phase as done and move to the next.
+
+        Phases are counted by DISTINCT name: a phase ticked twice
+        (core-audit runs inside the core engine and in the mega scan)
+        counts once, so a complete run reads 29/29, never 25/29.
+        """
         with self._lock:
-            self.done_count += 1
+            self.done_names.add(name)
+            self.done_count = len(self.done_names)
             self.current = name
         if not self.enabled and not self.quiet:
             print("[%d/%d] %s" % (self.done_count, self.total, name))

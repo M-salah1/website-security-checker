@@ -94,8 +94,13 @@ class TestPorts(unittest.TestCase):
         inv.phase("b")
         inv.phase("c")
         self.assertEqual(inv.percent(), 30)
+        # Phases are counted by distinct name: repeating the same
+        # phase does not inflate the percentage.
         for _ in range(20):
-            inv.phase("x")
+            inv.phase("c")
+        self.assertEqual(inv.percent(), 30)
+        for name in ("d", "e", "f", "g", "h", "i", "j"):
+            inv.phase(name)
         self.assertEqual(inv.percent(), 99)
 
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Main menu + smart investigation wizard for CONAN FRAMEWORK v6.0.
+"""Main menu + smart investigation wizard for CONAN FRAMEWORK v7.0.
 
 Welcome screen (full page: tool, developer, how-to) -> language
 selection -> command console (`conan >`): scan <url>, help, menu,
@@ -299,14 +299,27 @@ class MenuApp:
         self.last_result = scan
         return rec
 
+    def _score_text(self, scan):
+        """Score line. A failed measurement is INCOMPLETE, never 0%."""
+        if scan.get("score") is None:
+            cov = (scan.get("coverage") or {}).get("percent")
+            extra = ("   %s: %s%%" % (self.t("coverage"), cov)) \
+                if cov is not None else ""
+            return "%s: %s   %s: %s   %s: %s%%   %s: %s s%s" % (
+                self.t("score"), self.t("incomplete"),
+                self.t("grade"), self.t("incomplete"),
+                self.t("confidence"), scan.get("confidence") or 0,
+                self.t("duration"), scan.get("duration_s"), extra)
+        return "%s: %s%%   %s: %s   %s: %s%%   %s: %s s" % (
+            self.t("score"), scan.get("score"), self.t("grade"),
+            scan.get("grade"), self.t("confidence"), scan.get("confidence"),
+            self.t("duration"), scan.get("duration_s"))
+
     def show_dashboard(self, rec):
         scan = rec["scan"]
         print(terminal.rule())
         print(terminal.orange("🔍 %s — %s" % (rec["case_id"], scan.get("target"))))
-        self.out("%s: %s%%   %s: %s   %s: %s%%   %s: %s s" % (
-            self.t("score"), scan.get("score"), self.t("grade"), scan.get("grade"),
-            self.t("confidence"), scan.get("confidence"), self.t("duration"),
-            scan.get("duration_s")))
+        self.out(self._score_text(scan))
         dist = scan.get("severity_distribution") or {}
         self.out("%s: %s" % (self.t("findings"),
                              ", ".join("%s=%d" % (k, v) for k, v in dist.items() if v)))
@@ -494,10 +507,10 @@ class MenuApp:
         print(terminal.rule())
         print(terminal.orange("🔍 %s" % self.disp(self.t("detailed_report"))))
         self.out("%s: %s" % (self.disp(self.t("target")), scan.get("target")))
-        self.out("%s: %s%%   %s: %s   %s: %s%%   %s: %s s" % (
-            self.t("score"), scan.get("score"), self.t("grade"), scan.get("grade"),
-            self.t("confidence"), scan.get("confidence"), self.t("duration"),
-            scan.get("duration_s")))
+        self.out(self._score_text(scan))
+        if scan.get("resumed_from"):
+            self.out("   %s: %s" % (self.disp(self.t("resumed")),
+                                   ", ".join(scan["resumed_from"])))
         # 1. Identity & country
         print(terminal.rule())
         self.out("1. %s" % self.disp(self.t("identity")))
@@ -688,6 +701,20 @@ class MenuApp:
         if scan.get("phase_timeouts"):
             self.out("   %s: %s" % (self.disp(self.t("phase_timeout")),
                                    ", ".join(scan["phase_timeouts"])))
+        status = scan.get("module_status") or {}
+        if status:
+            self.out("   %s:" % self.disp(self.t("module_status")))
+            for name in (scan.get("deep_tests") or []):
+                run = status.get(name)
+                if not run:
+                    continue
+                line = "   • %s: %s (%ss" % (
+                    name, run.get("status"), run.get("duration_s"))
+                if run.get("retries"):
+                    line += ", %d %s" % (run["retries"], "retries")
+                if run.get("error"):
+                    line += " — %s" % run["error"][:80]
+                self.out(line + ")")
         self.out("   %s" % ", ".join(scan.get("deep_tests") or []))
         findings = scan.get("findings") or []
         dist = scan.get("severity_distribution") or {}
@@ -748,7 +775,7 @@ class MenuApp:
             findings += vuln_mod.test_file_upload(forms.get("forms", []), url)
         finally:
             inv.done()
-        scan = {"tool": "CONAN FRAMEWORK v6.0", "target": url,
+        scan = {"tool": "CONAN FRAMEWORK v7.0", "target": url,
                 "kind": "vulnerability-audit",
                 "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

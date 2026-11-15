@@ -89,10 +89,26 @@ def _grab_banner(sock, timeout=0.6):
         return ""
 
 
-def _check_port(host, port, timeout=0.4):
-    """One TCP connect. Returns a dict for open ports, else None."""
+def _resolve_ip(host, timeout=5):
+    """Resolve the host ONCE to an IP. Connecting by hostname made the
+    scanner do a DNS lookup per port — on slow mobile DNS that alone
+    took over a minute. Returns the IP, or None (caller falls back
+    to the hostname)."""
     try:
-        sock = socket.create_connection((host, port), timeout=timeout)
+        from ..core.timeout import call_with_timeout
+        ip = call_with_timeout(lambda: socket.gethostbyname(host), timeout)
+        if isinstance(ip, dict):
+            return None
+        return ip
+    except Exception:
+        return None
+
+
+def _check_port(ip, port, timeout=0.4):
+    """One TCP connect to an already-resolved IP. Returns a dict for
+    open ports, else None."""
+    try:
+        sock = socket.create_connection((ip, port), timeout=timeout)
     except Exception:
         return None
     banner = _grab_banner(sock)
@@ -104,12 +120,19 @@ def _check_port(host, port, timeout=0.4):
             "state": "open", "banner": banner}
 
 
-def scan_ports(host, ports, timeout=0.4, workers=30, progress=None):
-    """Connect-scan a list of ports. Returns the open ones (sorted)."""
+def scan_ports(host, ports, timeout=0.4, workers=30, progress=None,
+               ip=None):
+    """Connect-scan a list of ports. Returns the open ones (sorted).
+
+    `ip` — a pre-resolved address (from the DNS/origin modules). When
+    given, no DNS lookup happens per port at all.
+    """
     ports = sorted(set(int(p) for p in ports if 0 < int(p) < 65536))
+    target = ip or _resolve_ip(host) or host
     found = []
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        futures = {pool.submit(_check_port, host, p, timeout): p for p in ports}
+        futures = {pool.submit(_check_port, target, p, timeout): p
+                   for p in ports}
         for fut in futures:
             try:
                 res = fut.result()
@@ -125,7 +148,7 @@ def scan_ports(host, ports, timeout=0.4, workers=30, progress=None):
     return sorted(found, key=lambda r: r["port"])
 
 
-def probe_entry_points(host, open_ports, url, timeout=5):
+def probe_entry_points(host, open_ports, url, timeout=5, ip=None):
     """Try a plain HTTP request through each open door.
 
     Returns one entry per port that answered HTTP at all: the status
@@ -135,13 +158,14 @@ def probe_entry_points(host, open_ports, url, timeout=5):
     """
     entries = []
     target_host = url.split("/")[2] if "://" in url else host
+    target = ip or host
     for item in open_ports:
         port = item["port"]
         scheme = "https" if port in (443, 8443, 9443, 2083, 2087) else "http"
         path = "%s://%s:%d/" % (scheme, host, port)
         try:
             ctx = ssl._create_unverified_context()
-            req = socket.create_connection((host, port), timeout=timeout)
+            req = socket.create_connection((target, port), timeout=timeout)
             if scheme == "https":
                 req = ctx.wrap_socket(req, server_hostname=host)
             req.settimeout(timeout)
@@ -169,7 +193,8 @@ def probe_entry_points(host, open_ports, url, timeout=5):
     return entries
 
 
-def adaptive_probe(host, url, timeout=0.4, common_ports=None, progress=None):
+def adaptive_probe(host, url, timeout=0.4, common_ports=None, progress=None,
+                   ip=None):
     """The Sunlight/Echo adaptive probe. Three phases:
 
     1. Common doors — scan the well-known ports (the "light" from
@@ -178,10 +203,14 @@ def adaptive_probe(host, url, timeout=0.4, common_ports=None, progress=None):
        neighbours (the echo tells the probe where to shine next).
     3. Entry points — try a plain HTTP request through every open
        door and record which ones serve the site's public pages.
+
+    `ip` — a pre-resolved address; all connects go to it directly,
+    so no per-port DNS lookup can stall the probe.
     """
     common = sorted(common_ports if common_ports is not None
                     else COMMON_PORTS)
-    phase1 = scan_ports(host, common, timeout=timeout, progress=progress)
+    phase1 = scan_ports(host, common, timeout=timeout, progress=progress,
+                        ip=ip)
     tried = set(common)
     related = []
     for item in phase1:
@@ -189,10 +218,10 @@ def adaptive_probe(host, url, timeout=0.4, common_ports=None, progress=None):
             if p not in tried:
                 related.append(p)
                 tried.add(p)
-    phase2 = scan_ports(host, related, timeout=timeout, progress=progress) \
-        if related else []
+    phase2 = scan_ports(host, related, timeout=timeout, progress=progress,
+                        ip=ip) if related else []
     all_open = sorted(phase1 + phase2, key=lambda r: r["port"])
-    entries = probe_entry_points(host, all_open, url, timeout=5) \
+    entries = probe_entry_points(host, all_open, url, timeout=5, ip=ip) \
         if all_open else []
     return {
         "method": "Sunlight/Echo adaptive probe",
@@ -206,9 +235,9 @@ def adaptive_probe(host, url, timeout=0.4, common_ports=None, progress=None):
     }
 
 
-def scan_all_ports(host, timeout=0.4, workers=60, progress=None):
+def scan_all_ports(host, timeout=0.4, workers=60, progress=None, ip=None):
     """Full scan of all 65535 ports. Slow by nature — minutes, not
     seconds. Only run on an authorized target, with the user's choice.
     """
     return scan_ports(host, range(1, 65536), timeout=timeout,
-                      workers=workers, progress=progress)
+                      workers=workers, progress=progress, ip=ip)
