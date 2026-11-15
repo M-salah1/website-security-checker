@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Main menu + smart investigation wizard for CONAN FRAMEWORK v5.4.
+"""Main menu + smart investigation wizard for CONAN FRAMEWORK v5.5.
 
 Welcome screen (full page: tool, developer, how-to) -> language
 selection -> command console (`conan >`): scan <url>, help, menu,
@@ -399,6 +399,11 @@ class MenuApp:
         self.out("   %s" % self.disp(hist.get("admin_contact") or "UNKNOWN"))
         self.out("   %s: %s" % (self.disp(self.t("source")),
                                self.disp(hist.get("admin_contact_source") or "")))
+        contacts = scan.get("contacts") or {}
+        for email in (contacts.get("emails") or [])[:3]:
+            print("   ✉ %s" % email)
+        for line in (contacts.get("contact_lines") or [])[:3]:
+            self.out("   %s" % self.disp(line))
         # 4. Servers
         print(terminal.rule())
         self.out("4. %s" % self.disp(self.t("servers")))
@@ -435,9 +440,59 @@ class MenuApp:
         disc = scan.get("discovery") or {}
         self.out("   %s: %s" % (self.disp(self.t("discovered_pages")),
                                len(disc.get("pages", []) or [])))
-        # 6. Deep tests + findings
+        # 6. Cookies (names + flags only — values are never shown)
         print(terminal.rule())
-        self.out("6. %s" % self.disp(self.t("deep_tests")))
+        self.out("6. %s" % self.disp(self.t("cookies")))
+        cookies = scan.get("cookies") or {}
+        for c in (cookies.get("cookies") or [])[:10]:
+            self.out("   %s  [Secure=%s HttpOnly=%s SameSite=%s]" % (
+                c.get("name", "?"), bool(c.get("secure")),
+                bool(c.get("httponly")), c.get("samesite") or "-"))
+        self.out("   %s" % self.disp(self.t("cookies_note")))
+        # 7. API & client-side reverse engineering (public JS only)
+        print(terminal.rule())
+        self.out("7. %s" % self.disp(self.t("js_api")))
+        js = scan.get("js_api") or {}
+        self.out("   %s: %s" % (self.disp(self.t("scripts_scanned")),
+                               js.get("scripts_scanned", 0)))
+        self.out("   GraphQL: %s" % ("yes" if js.get("graphql") else "no"))
+        for ep in (js.get("endpoints") or [])[:10]:
+            print("   → %s" % ep)
+        for ws in (js.get("websockets") or [])[:3]:
+            print("   ⇌ %s" % ws)
+        # 8. Real IP & origin
+        print(terminal.rule())
+        self.out("8. %s" % self.disp(self.t("real_ip")))
+        origin = scan.get("origin") or {}
+        self.out("   IP: %s" % ", ".join(origin.get("ips") or ["UNKNOWN"]))
+        self.out("   %s: %s" % (self.disp(self.t("cdn_detected")),
+                               "yes" if origin.get("cdn_detected") else "no"))
+        if origin.get("cdn_signals"):
+            self.out("   %s" % ", ".join(origin["cdn_signals"]))
+        direct = origin.get("direct_ip") or {}
+        if direct:
+            self.out("   %s: %s (%s)" % (self.disp(self.t("direct_ip_check")),
+                                        direct.get("ip"),
+                                        direct.get("verdict")))
+        self.out("   %s: %s" % (self.disp(self.t("origin_ip")),
+                               self.disp(origin.get("origin") or "UNKNOWN")))
+        # 9. Permissions & certificates
+        print(terminal.rule())
+        self.out("9. %s" % self.disp(self.t("permissions_section")))
+        perms = scan.get("permissions") or {}
+        self.out("   Permissions-Policy: %s" % (
+            (perms.get("permissions_policy") or "UNKNOWN")[:120]))
+        self.out("   CORS: %s" % (perms.get("cors") or "UNKNOWN"))
+        self.out("   CSP: %s" % ("yes" if perms.get("csp") else "no"))
+        self.out("   %s: %s (%s: %s)" % (self.disp(self.t("tls_issuer")),
+                                        perms.get("tls_issuer") or "UNKNOWN",
+                                        self.disp(self.t("tls_days_left")),
+                                        perms.get("tls_days_left")))
+        self.out("   %s: %s" % (self.disp(self.t("ct_certificates")),
+                               perms.get("ct_certificates", 0)))
+        # 10. Deep tests + findings
+        print(terminal.rule())
+        self.out("10. %s" % self.disp(self.t("deep_tests")))
         self.out("   %s" % ", ".join(scan.get("deep_tests") or []))
         findings = scan.get("findings") or []
         dist = scan.get("severity_distribution") or {}
@@ -498,7 +553,7 @@ class MenuApp:
             findings += vuln_mod.test_file_upload(forms.get("forms", []), url)
         finally:
             inv.done()
-        scan = {"tool": "CONAN FRAMEWORK v5.4", "target": url,
+        scan = {"tool": "CONAN FRAMEWORK v5.5", "target": url,
                 "kind": "vulnerability-audit",
                 "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

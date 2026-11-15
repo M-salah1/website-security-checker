@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Menu entry point for CONAN FRAMEWORK v5.4 — welcome screen, language
+"""Menu entry point for CONAN FRAMEWORK v5.5 — welcome screen, language
 selection, 20-option main menu, wizard-driven investigations."""
 import argparse
 
@@ -9,7 +9,7 @@ from .core.menu import MenuApp
 
 def main(argv=None, start_menu=False):
     ap = argparse.ArgumentParser(prog="conan",
-                                 description="CONAN FRAMEWORK v5.4 — menu mode")
+                                 description="CONAN FRAMEWORK v5.5 — menu mode")
     ap.add_argument("--lang", choices=["ar", "fr", "en"], default=None)
     ap.add_argument("--no-animation", action="store_true")
     ap.add_argument("--menu", action="store_true",

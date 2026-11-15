@@ -18,9 +18,13 @@ import time
 
 from ..core import engine
 from ..core.scope import ScopeError
+from ..intelligence import contacts as contacts_mod
 from ..intelligence import history as history_mod
+from . import js_api as js_api_mod
+from . import origin_ip as origin_mod
 from . import paths as paths_mod
 from . import website as website_mod
+from ._http import get as http_get
 from ._http import request as http_request
 
 DEEP_TESTS = [
@@ -28,7 +32,40 @@ DEEP_TESTS = [
     "api", "discovery", "exposure", "phishing", "vulnerabilities",
     "core-audit", "domain-history", "certificate-history", "admin-contact",
     "country-servers", "deep-paths", "http-methods", "redirect-chain",
+    "js-api-reverse", "real-ip", "published-contacts", "permissions",
+    "certificates",
 ]
+
+
+def _permissions_section(scan, timeout):
+    """Permissions & certificates, from observed headers + TLS only."""
+    out = {"permissions_policy": None, "cors": None, "csp": None,
+           "tls_issuer": None, "tls_days_left": None, "tls_version": None,
+           "ct_certificates": 0}
+    try:
+        headers = scan.get("headers") or {}
+        for check in headers.get("checks") or []:
+            name = (check.get("name") or "").lower()
+            if "permissions-policy" in name:
+                out["permissions_policy"] = check.get("value") or ""
+            if "content-security-policy" in name:
+                out["csp"] = check.get("value") or ""
+        r = http_get(scan.get("target", ""), timeout=timeout)
+        lower = {str(k).lower(): v for k, v in dict(r["headers"]).items()}
+        out["cors"] = lower.get("access-control-allow-origin")
+        if out["permissions_policy"] is None:
+            out["permissions_policy"] = lower.get("permissions-policy", "")
+        if out["csp"] is None:
+            out["csp"] = lower.get("content-security-policy", "")
+    except Exception:
+        pass
+    tls = scan.get("tls") or {}
+    out["tls_issuer"] = tls.get("issuer")
+    out["tls_days_left"] = tls.get("days_left")
+    out["tls_version"] = tls.get("version")
+    hist = scan.get("history") or {}
+    out["ct_certificates"] = hist.get("ct_certificates") or 0
+    return out
 
 
 def mega_scan(url, scope=None, settings=None, timeout=15, progress=None):
@@ -61,10 +98,17 @@ def mega_scan(url, scope=None, settings=None, timeout=15, progress=None):
     scan = website_mod.investigate_website(
         url, scope=scope, max_pages=max_pages, timeout=timeout, progress=tick)
     scan["kind"] = "mega-scan"
-    scan["tool"] = "CONAN FRAMEWORK v5.4"
+    scan["tool"] = "CONAN FRAMEWORK v5.5"
     scan["deep_tests"] = list(DEEP_TESTS)
     scan["scope"] = {"kind": "authorized" if authorized else "passive",
                      "authorized": authorized}
+
+    # Homepage HTML once, reused by the deep-recon modules.
+    try:
+        html = http_get(url, timeout=timeout)["body"]
+    except Exception:
+        html = ""
+    discovery_pages = (scan.get("discovery") or {}).get("pages") or []
 
     # Deep identity: domain history, admin contact, country, servers.
     tick("domain-history")
@@ -72,6 +116,35 @@ def mega_scan(url, scope=None, settings=None, timeout=15, progress=None):
         scan["history"] = history_mod.domain_history(host, url, timeout=timeout)
     except Exception as exc:
         scan["history"] = {"domain": host, "error": str(exc)}
+
+    # Published contacts from the site's own public pages.
+    tick("published-contacts")
+    try:
+        scan["contacts"] = contacts_mod.discover_contacts(
+            url, html, discovery_pages, timeout=timeout)
+    except Exception as exc:
+        scan["contacts"] = {"emails": [], "contact_lines": [], "error": str(exc)}
+
+    # Client-side reverse engineering: API endpoints from public JS.
+    tick("js-api-reverse")
+    try:
+        scan["js_api"] = js_api_mod.analyze_js(url, html, timeout=timeout)
+    except Exception as exc:
+        scan["js_api"] = {"endpoints": [], "error": str(exc)}
+
+    # Real-IP investigation: resolved IPs, CDN signals, direct-IP check.
+    tick("real-ip")
+    try:
+        scan["origin"] = origin_mod.investigate_origin(host, url, timeout=timeout)
+    except Exception as exc:
+        scan["origin"] = {"host": host, "ips": [], "error": str(exc)}
+
+    # Permissions & certificates from observed headers + TLS.
+    tick("permissions")
+    try:
+        scan["permissions"] = _permissions_section(scan, timeout)
+    except Exception as exc:
+        scan["permissions"] = {"error": str(exc)}
 
     # Deep paths (bounded probe) — authorized targets only.
     tick("deep-paths")

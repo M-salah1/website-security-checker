@@ -1,4 +1,4 @@
-# CONAN FRAMEWORK v5.4 — ULTIMATE CYBER INVESTIGATION SYSTEM 🔍
+# CONAN FRAMEWORK v5.5 — ULTIMATE CYBER INVESTIGATION SYSTEM 🔍
 
 **CONAN DETECTIVE** — منصة تحقيق سيبراني معيارية متعددة اللغات.
 
@@ -9,7 +9,7 @@ GitHub: **M-salah1** — Copyright © 2026
 - **Command console**: full welcome page on entry, then a `conan >` prompt — `scan <url>`, `help`, `menu`, `about`, `lang`, `version`, `clear`, `exit`
 - **MEGA SCAN**: `scan <url>` runs every module together, one detailed report (identity, domain history, admin contact, country, servers, paths, deep tests)
 - 20-option interactive menu (via `menu`, or `python3 conan.py menu`) • 3 languages (العربية / Français / English, RTL)
-- v5.4 Ethical Defender Edition: safe lab, victim protection, defense center, animated reports
+- v5.5 Ethical Defender Edition: safe lab, victim protection, defense center, animated reports
 - Works on Android Termux, Linux and Windows PowerShell
 
 ## Start
@@ -49,10 +49,14 @@ After the welcome page and language selection you are at the `conan >` prompt:
 
 1. **Identity & location** — domain, country (geo estimate), city/region, hosting org
 2. **Domain history** — registration / expiry / registrar / registrant org from public WHOIS, earliest certificate from the public CT log, logged hostnames. Previous names and rename dates are WHOIS history (paid service) — shown as UNKNOWN with the reason, never invented
-3. **Admin contact** — only what the site itself publishes (security.txt contacts, public WHOIS org); redacted or undisclosed = UNKNOWN
+3. **Admin contact** — only what the site itself publishes (security.txt contacts, public WHOIS org, mailto links and contact lines from its own public about/contact pages); redacted or undisclosed = UNKNOWN
 4. **Servers** — web-server header, IPs, nameservers, MX, TLS issuer, allowed HTTP methods, redirect chain
 5. **Paths** — bounded deep-path probe (authorized targets only) + discovered pages
-6. **Deep tests** — health, DNS/DNSSEC, TLS, headers, cookies, forms, API, discovery, exposure, phishing, vulnerability indicators, core score/grade — with findings, evidence and fixes
+6. **Cookies** — shown by name and flags (Secure / HttpOnly / SameSite) only; values are never shown
+7. **API & reverse engineering** — endpoints, GraphQL and WebSocket URLs extracted from the site's own publicly served JavaScript
+8. **Real IP & origin** — every resolved IP, CDN detection, one plain direct-IP request; the origin is UNCONFIRMED unless a direct request proves it
+9. **Permissions & certificates** — Permissions-Policy, CORS, CSP, TLS issuer and days left, CT certificate count
+10. **Deep tests** — health, DNS/DNSSEC, TLS, headers, cookies, forms, API, discovery, exposure, phishing, vulnerability indicators, core score/grade — with findings, evidence and fixes
 
 ## Main menu
 
@@ -102,7 +106,7 @@ Conan never attacks an attacker's machine, never launches DDoS, never
 guesses passwords, never bypasses logins, and never shows password or
 session-cookie values.
 
-## v5.4 Design release — animated interface, one-line loader, readable Arabic
+## v5.5 Design release — animated interface, one-line loader, readable Arabic
 
 - **Animated design:** a magnifying-glass sweep intro on startup, a
   coloured numbered menu (orange numbers, green protection-mode line),

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Interactive shell for CONAN FRAMEWORK v5.4.
+"""Interactive shell for CONAN FRAMEWORK v5.5.
 
 Commands: help, about, version, clear, exit, scan, discover, paths, headers,
 tls, cookies, forms, api, phishing, health, xss, sqli, csrf, auth-test,
@@ -216,7 +216,7 @@ class Shell:
         self.last_target = url
         t0 = time.time()
         inv = self._anim(total=11, quiet=quiet)
-        scan = {"tool": "CONAN FRAMEWORK v5.4", "target": url,
+        scan = {"tool": "CONAN FRAMEWORK v5.5", "target": url,
                 "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 "language": _lang(), "findings": []}
         inv.start()
@@ -329,7 +329,7 @@ class Shell:
 
     def print_summary(self, scan):
         print(terminal.rule())
-        print(terminal.orange("🔍 CONAN FRAMEWORK v5.4 — %s" % scan["target"]))
+        print(terminal.orange("🔍 CONAN FRAMEWORK v5.5 — %s" % scan["target"]))
         print("Score: %s%%  Grade: %s  Confidence: %s%%  Duration: %s s" % (
             scan.get("score"), scan.get("grade"), scan.get("confidence"),
             scan.get("duration_s")))
@@ -799,7 +799,7 @@ def _raw_cookies(headers):
 def main(argv=None):
     ap = argparse.ArgumentParser(
         prog="conan",
-        description="CONAN FRAMEWORK v5.4 — Advanced Website Security Detective")
+        description="CONAN FRAMEWORK v5.5 — Advanced Website Security Detective")
     ap.add_argument("url", nargs="?", help="Target URL to scan")
     ap.add_argument("--lang", choices=["en", "fr", "ar"], default=None)
     ap.add_argument("--json", action="store_true", help="Print the unified JSON report")
