@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-المحقق كونان - Conan Detective v3.0
+المحقق كونان - Conan Detective v4.0
 واجهة بأسلوب Metasploit + 3 لغات (English / Français / العربية RTL)
 أداة فحص أمان دفاعية سلبية (Passive) لمواقع الويب - Termux
 Python standard library فقط، بدون تثبيت مكتبات.
@@ -51,7 +51,7 @@ import urllib.parse
 import urllib.request
 
 
-VERSION = "3.0"
+VERSION = "4.0"
 TOOL_NAME = "المحقق كونان - Conan Detective"
 DEVELOPER_NAME = "Hafed Mehdi Salah Eddine"
 DEVELOPER_COUNTRY = "الجزائر 🇩🇿"
@@ -1585,7 +1585,7 @@ def run_check(target_url):
     comparison = compare_and_save(domain, url, score, grade(score), [v["title"] for v in vulns_sorted])
 
     report = {
-        "tool": "Conan Detective 3.0 - المحقق كونان",
+        "tool": "Conan Detective 4.0 - المحقق كونان",
         "version": VERSION,
         "language": LANG,
         "developer": DEVELOPER_NAME,

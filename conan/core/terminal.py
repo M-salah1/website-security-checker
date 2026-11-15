@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Terminal capabilities and brand colours for CONAN FRAMEWORK v3.0.
+"""Terminal capabilities and brand colours for CONAN FRAMEWORK v4.0.
 
 Brand: deep black background, charcoal surfaces, bright orange highlights,
 white typography, green = passed, red = critical, yellow = warning,
@@ -91,10 +91,10 @@ def progress_bar(done, total, width=30):
 
 
 def banner():
-    """CONAN FRAMEWORK v3.0 ASCII identity — magnifying glass + shield."""
+    """CONAN FRAMEWORK v4.0 ASCII identity — magnifying glass + shield."""
     lines = [
-        orange("   🔍  CONAN FRAMEWORK v3.0"),
-        orange("   ADVANCED WEBSITE SECURITY DETECTIVE  •  المحقق كونان"),
+        orange("   🔍  CONAN FRAMEWORK v4.0"),
+        orange("   ULTIMATE CYBER INVESTIGATION SYSTEM  •  المحقق كونان"),
         grey("   ────────────────────────────────────────────────"),
         "   Developer: " + bold("Hafed Mehdi Salah Eddine") + "  •  Algeria 🇩🇿",
         "   GitHub: M-salah1  •  Copyright © 2026",

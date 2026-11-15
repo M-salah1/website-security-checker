@@ -3,15 +3,27 @@
 """JSON reporting — the full technical report (secrets already redacted)."""
 import json
 
+from ..core.security import redact_text
+
 
 def build_json_report(scan):
     """Assemble the 16-section report dict from a scan result."""
     audit = scan.get("audit") or {}
-    findings = scan.get("findings") or []
+    # findings may live in scan["findings"] (v4) or scan["vulnerabilities"] (legacy)
+    raw_findings = scan.get("findings") or scan.get("vulnerabilities") or []
+    # Redact every finding at the report boundary — a secret that slipped
+    # into evidence must never reach a saved file.
+    findings = []
+    for f in raw_findings:
+        clean = dict(f)
+        clean["evidence"] = redact_text(clean.get("evidence", ""))
+        clean["detail"] = redact_text(clean.get("detail", "")) if clean.get("detail") else clean.get("detail")
+        findings.append(clean)
     confirmed = [f for f in findings if f.get("status") == "confirmed"]
     suspected = [f for f in findings if f.get("status") == "suspected"]
     return {
-        "tool": "CONAN FRAMEWORK v3.0 — ADVANCED WEBSITE SECURITY DETECTIVE",
+        "tool": "CONAN FRAMEWORK v4.0 — ULTIMATE CYBER INVESTIGATION SYSTEM",
+        "case_id": scan.get("case_id"),
         "developer": "Hafed Mehdi Salah Eddine — Algeria 🇩🇿",
         "github": "M-salah1",
         "target": scan.get("target"),

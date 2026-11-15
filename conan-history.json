@@ -1,0 +1,128 @@
+[
+  {
+    "domain": "example.com",
+    "target": "https://example.com",
+    "score": 28,
+    "grade": "F - خطر",
+    "vulns": [
+      "غياب HSTS",
+      "غياب Content-Security-Policy",
+      "خطر Clickjacking",
+      "غياب nosniff",
+      "غياب Referrer-Policy",
+      "غياب Permissions-Policy",
+      "غياب Cross-Origin-Opener-Policy",
+      "غياب Cross-Origin-Embedder-Policy",
+      "لا يوجد security.txt"
+    ],
+    "checked_at_utc": "2026-11-15T08:58:01.041792+00:00"
+  },
+  {
+    "domain": "example.com",
+    "target": "https://example.com",
+    "score": 28,
+    "grade": "F - خطر",
+    "vulns": [
+      "غياب HSTS",
+      "غياب Content-Security-Policy",
+      "خطر Clickjacking",
+      "غياب nosniff",
+      "غياب Referrer-Policy",
+      "غياب Permissions-Policy",
+      "غياب Cross-Origin-Opener-Policy",
+      "غياب Cross-Origin-Embedder-Policy",
+      "لا يوجد security.txt"
+    ],
+    "checked_at_utc": "2026-11-15T08:58:27.217365+00:00"
+  },
+  {
+    "domain": "example.com",
+    "target": "https://example.com",
+    "score": 28,
+    "grade": "F - خطر",
+    "vulns": [
+      "غياب HSTS",
+      "غياب Content-Security-Policy",
+      "خطر Clickjacking",
+      "غياب nosniff",
+      "غياب Referrer-Policy",
+      "غياب Permissions-Policy",
+      "غياب Cross-Origin-Opener-Policy",
+      "غياب Cross-Origin-Embedder-Policy",
+      "لا يوجد security.txt"
+    ],
+    "checked_at_utc": "2026-11-15T08:59:05.916887+00:00"
+  },
+  {
+    "domain": "example.com",
+    "target": "https://example.com",
+    "score": 28,
+    "grade": "F - خطر",
+    "vulns": [
+      "غياب HSTS",
+      "غياب Content-Security-Policy",
+      "خطر Clickjacking",
+      "غياب nosniff",
+      "غياب Referrer-Policy",
+      "غياب Permissions-Policy",
+      "غياب Cross-Origin-Opener-Policy",
+      "غياب Cross-Origin-Embedder-Policy",
+      "لا يوجد security.txt"
+    ],
+    "checked_at_utc": "2026-11-15T08:59:52.012673+00:00"
+  },
+  {
+    "domain": "example.com",
+    "target": "https://example.com",
+    "score": 28,
+    "grade": "F - خطر",
+    "vulns": [
+      "غياب HSTS",
+      "غياب Content-Security-Policy",
+      "خطر Clickjacking",
+      "غياب nosniff",
+      "غياب Referrer-Policy",
+      "غياب Permissions-Policy",
+      "غياب Cross-Origin-Opener-Policy",
+      "غياب Cross-Origin-Embedder-Policy",
+      "لا يوجد security.txt"
+    ],
+    "checked_at_utc": "2026-11-15T09:00:28.862101+00:00"
+  },
+  {
+    "domain": "example.com",
+    "target": "https://example.com",
+    "score": 28,
+    "grade": "F - خطر",
+    "vulns": [
+      "غياب HSTS",
+      "غياب Content-Security-Policy",
+      "خطر Clickjacking",
+      "غياب nosniff",
+      "غياب Referrer-Policy",
+      "غياب Permissions-Policy",
+      "غياب Cross-Origin-Opener-Policy",
+      "غياب Cross-Origin-Embedder-Policy",
+      "لا يوجد security.txt"
+    ],
+    "checked_at_utc": "2026-11-15T09:02:15.962298+00:00"
+  },
+  {
+    "domain": "example.com",
+    "target": "https://example.com",
+    "score": 28,
+    "grade": "F - خطر",
+    "vulns": [
+      "غياب HSTS",
+      "غياب Content-Security-Policy",
+      "خطر Clickjacking",
+      "غياب nosniff",
+      "غياب Referrer-Policy",
+      "غياب Permissions-Policy",
+      "غياب Cross-Origin-Opener-Policy",
+      "غياب Cross-Origin-Embedder-Policy",
+      "لا يوجد security.txt"
+    ],
+    "checked_at_utc": "2026-11-15T09:02:59.776678+00:00"
+  }
+]
