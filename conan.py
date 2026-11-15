@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""CONAN FRAMEWORK v4.1 — ULTIMATE CYBER INVESTIGATION SYSTEM (المحقق كونان).
+"""CONAN FRAMEWORK v5.0 — ULTIMATE CYBER INVESTIGATION SYSTEM (المحقق كونان).
 
 Launcher. The real code lives in the `conan/` package (same directory).
 This file only loads the package explicitly (the file and the package share
@@ -12,7 +12,7 @@ GitHub: M-salah1 — Copyright © 2026
 Python standard library only. Works on Android Termux, Linux and Windows.
 
 Modes:
-    python3 conan.py                        # menu (welcome + language + 17 options)
+    python3 conan.py                        # menu (welcome + language + 20 options)
     python3 conan.py menu                   # menu mode
     python3 conan.py shell                  # interactive shell: conan >
     python3 conan.py https://example.com    # direct full scan

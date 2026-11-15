@@ -1,4 +1,4 @@
-# CONAN FRAMEWORK v4.1 — ULTIMATE CYBER INVESTIGATION SYSTEM 🔍
+# CONAN FRAMEWORK v5.0 — ULTIMATE CYBER INVESTIGATION SYSTEM 🔍
 
 **CONAN DETECTIVE** — منصة تحقيق سيبراني معيارية متعددة اللغات.
 
@@ -6,13 +6,14 @@ Developer: **Hafed Mehdi Salah Eddine** — Algeria 🇩🇿
 GitHub: **M-salah1** — Copyright © 2026
 
 - Python standard library only — no required dependencies
-- 17-option interactive menu • wizard-driven investigations • 3 languages (العربية / Français / English, RTL)
+- 20-option interactive menu • wizard-driven investigations • 3 languages (العربية / Français / English, RTL)
+- v5.0 Ethical Defender Edition: safe lab, victim protection, defense center, animated reports
 - Works on Android Termux, Linux and Windows PowerShell
 
 ## Start
 
 ```bash
-python3 conan.py                        # menu: welcome + language + 17 options
+python3 conan.py                        # menu: welcome + language + 20 options
 python3 conan.py shell                  # interactive shell: conan >
 python3 conan.py https://example.com    # direct full scan
 python3 conan.py https://example.com --json
@@ -39,7 +40,10 @@ python3 conan.py --version
 | 14 | Digital Evidence Collection | Export case evidence (JSON + HTML + SHA-256) and record safety/abuse incidents (metadata only) |
 | 15 | Previous Investigations | Cases + sessions, compare two scans |
 | 16 | Settings | Language, animation, timeout, max pages, scope |
-| 17 | Exit | |
+| 17 | Safe Lab & Ethical Training | Deliberately vulnerable demo site on 127.0.0.1 only — practice the scanners safely, every finding explained with its fix |
+| 18 | Victim Protection & Incident Response | Safety plan, evidence checklist and official reporting channels (NCMEC / INHOPE / INTERPOL) — no URL is ever fetched, no content downloaded |
+| 19 | Defense, Hardening & Deterrence | Apache/Nginx hardening snippets, CSP, rate-limit guidance, incident-response plan, abuse-report letter template, animated HTML report |
+| 20 | Exit | |
 
 Navigation: no commands to memorise. After the language screen you get a
 numbered menu — type `1` for a scan, enter the URL, press Enter. At any
@@ -47,6 +51,22 @@ prompt, **0** is the back button (also `BACK` / `رجوع`): it returns to the
 previous screen or the main menu, and `0` on the main menu exits.
 BACK preserves completed results — cases live in `conan-cases.json` and
 sessions in `conan-sessions.json`.
+
+## v5.0 Ethical Defender Edition — what it is and what it is not
+
+**Built for ethical hackers and defenders:** a safe lab on localhost to
+train on, authorized non-destructive tests on your own sites (or sites
+with written authorization), strong public-information gathering, and
+defense tools that protect victims — safety plan, evidence preservation
+and official reporting channels for girls, children and anyone
+threatened online.
+
+**"Counter-attacks" in Conan mean defensive deterrence only:** hardening
+your own server, rate-limiting and blocking abuse at your own firewall,
+preserving evidence, and reporting to the host/registrar and the police.
+Conan never attacks an attacker's machine, never launches DDoS, never
+guesses passwords, never bypasses logins, and never shows password or
+session-cookie values.
 
 ## Scope and authorization — read this first
 
@@ -111,7 +131,7 @@ conan/
   __init__.py  menu_app.py  cli.py        # menu app + v3 shell (preserved)
   core/
     engine.py            v2.4 audit engine (preserved, VERSION 4.0)
-    menu.py              17-option menu + wizard
+    menu.py              20-option menu + wizard
     navigation.py        stack + persistent sessions
     i18n.py              ar/fr/en (JSON files in localization/)
     authorization.py     scope wizard (wraps scope.py)

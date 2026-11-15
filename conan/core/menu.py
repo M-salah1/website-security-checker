@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Main menu + smart investigation wizard for CONAN FRAMEWORK v4.0.
+"""Main menu + smart investigation wizard for CONAN FRAMEWORK v5.0.
 
-Welcome screen -> language selection (remembered) -> 17-option menu.
+Welcome screen -> language selection (remembered) -> 20-option menu.
 The wizard asks for URL/IP, validates it, checks scope/authorization, asks
 only essential extra questions, runs the modules and shows organized
 results. Navigation commands BACK / HOME / MENU / CANCEL / EXIT work at
@@ -44,7 +44,11 @@ from ..intelligence import organization as org_mod
 from ..intelligence import osint as osint_mod
 from ..intelligence import relationships as rel_mod
 from ..intelligence import reputation as rep_mod
+from ..defense import hardening
+from ..defense import victim_support
+from ..laboratory import safe_lab
 from ..laboratory import simulator as lab_mod
+from ..reporting.animated_report import save_animated_html_report
 from ..reporting.html_report import save_html_report
 from ..reporting.json_report import save_json_report
 from ..storage import database as db_mod
@@ -181,7 +185,7 @@ class MenuApp:
     def main_menu(self):
         print(terminal.rule())
         print(terminal.orange("   " + self.t("main_menu")))
-        for i in range(1, 18):
+        for i in range(1, 21):
             print("   %2d. %s" % (i, self.t("menu_%d" % i)))
         # Visible back button: on the main menu there is nowhere back to,
         # so 0 exits — exactly like the phone back button on a home screen.
@@ -218,8 +222,8 @@ class MenuApp:
         for f in (scan.get("findings") or [])[:8]:
             print("  [%s/%s] %s" % (f["severity"].upper(), f["status"], f["name"]))
         print(terminal.rule())
-        self.out("0. %s    1. %s    2. JSON    3. HTML" % (
-            self.t("back"), self.t("findings")))
+        self.out("0. %s    1. %s    2. JSON    3. HTML    4. %s" % (
+            self.t("back"), self.t("findings"), self.t("animated_report")))
         try:
             choice = self.ask(self.t("enter_choice"))
         except NavCommand:
@@ -236,6 +240,9 @@ class MenuApp:
         elif choice == "3":
             save_html_report(scan, "conan-report.html")
             self.out(self.t("export_done") + ": conan-report.html")
+        elif choice == "4":
+            save_animated_html_report(scan, "conan-report-animated.html")
+            self.out(self.t("export_done") + ": conan-report-animated.html")
 
     # -- menu options ------------------------------------------------------
     def opt_website_investigation(self):
@@ -285,7 +292,7 @@ class MenuApp:
             findings += vuln_mod.test_file_upload(forms.get("forms", []), url)
         finally:
             inv.done()
-        scan = {"tool": "CONAN FRAMEWORK v4.0", "target": url,
+        scan = {"tool": "CONAN FRAMEWORK v5.0", "target": url,
                 "kind": "vulnerability-audit",
                 "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                 "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -457,6 +464,108 @@ class MenuApp:
         lab_mod.run_lab_simulation(log=lambda m: self.out(m))
         self.pause()
 
+    def opt_safe_lab(self):
+        """Safe lab: a deliberately vulnerable demo site on 127.0.0.1 only.
+
+        Ethical training without touching any real site — the scanners run
+        against localhost, find real (demo) weaknesses, and each finding
+        comes with its fix. The lab is stopped and cleaned up on exit.
+        """
+        self.nav.push("safe-lab")
+        self.out(self.t("safe_lab") + " — 127.0.0.1 only, demo site, no real data.")
+        server, url = safe_lab.start_lab()
+        try:
+            print("%s %s" % (self.t("lab_started"), url))
+            self.out(self.t("training_scan") + "...")
+            res = safe_lab.run_lab_training(url)
+            for f in res["findings"]:
+                print("  [%s/%s] %s" % (f["severity"].upper(), f["status"], f["name"]))
+                print("      %s" % f.get("training_note", "")[:200])
+            if not res["findings"]:
+                self.out("No findings — the lab may not have started correctly.")
+            print(terminal.grey(res["note"]))
+            self.pause()
+        finally:
+            safe_lab.stop_lab(server)
+            self.out(self.t("lab_stopped"))
+
+    def opt_victim_protection(self):
+        """Victim protection: safety plan, evidence checklist, channels.
+
+        No URL is ever fetched and no content is downloaded — this is
+        guidance and safe metadata recording only.
+        """
+        self.nav.push("victim")
+        while True:
+            print("  1. %s" % self.t("record_incident"))
+            print("  2. %s" % self.t("safety_plan"))
+            print("  3. %s" % self.t("evidence_checklist"))
+            print("  4. %s" % self.t("channels"))
+            print("  0. %s" % self.t("back"))
+            try:
+                choice = self.ask(self.t("enter_choice"))
+            except NavCommand:
+                return
+            if choice == "1":
+                self._record_incident()
+            elif choice == "2":
+                for step in victim_support.safety_plan(self.i18n.lang):
+                    self.out("  - " + step)
+                self.pause()
+            elif choice == "3":
+                for step in victim_support.evidence_checklist(self.i18n.lang):
+                    self.out("  - " + step)
+                self.pause()
+            elif choice == "4":
+                for ch in victim_support.report_channels():
+                    print("  - %s: %s" % (ch["name"], ch["url"]))
+                self.pause()
+
+    def opt_defense(self):
+        """Defense center: hardening, incident plan, takedown template.
+
+        Defensive only. Nothing here attacks anyone: the "deterrence" is
+        hardening your own server, blocking abuse at your own firewall,
+        and reporting through official channels with preserved evidence.
+        """
+        self.nav.push("defense")
+        while True:
+            print("  1. %s (Apache)" % self.t("hardening"))
+            print("  2. %s (Nginx)" % self.t("hardening"))
+            print("  3. %s" % self.t("incident_plan"))
+            print("  4. %s" % self.t("takedown_template"))
+            print("  5. %s" % self.t("animated_report"))
+            print("  0. %s" % self.t("back"))
+            try:
+                choice = self.ask(self.t("enter_choice"))
+            except NavCommand:
+                return
+            if choice == "1":
+                print(hardening.apache_snippet())
+                self.pause()
+            elif choice == "2":
+                print(hardening.nginx_snippet())
+                self.pause()
+            elif choice == "3":
+                for title, step in hardening.incident_response_plan():
+                    print("  %s — %s" % (title, step))
+                print("  Rate limits (your own server):")
+                for g in hardening.rate_limit_guidance():
+                    print("    - " + g)
+                self.pause()
+            elif choice == "4":
+                url = self.ask_url()
+                kind = self.ask("Kind (threats / harassment / illegal content)")
+                print(hardening.takedown_request_template(url, kind or "abusive content"))
+                self.pause()
+            elif choice == "5":
+                if not self.last_result:
+                    self.out(self.t("no_scan_yet"))
+                else:
+                    save_animated_html_report(self.last_result, "conan-report-animated.html")
+                    self.out(self.t("export_done") + ": conan-report-animated.html")
+                self.pause()
+
     def opt_health(self):
         self.nav.push("health")
         url = self.ask_url()
@@ -624,9 +733,12 @@ class MenuApp:
                 "14": self.opt_evidence,
                 "15": self.opt_previous,
                 "16": self.opt_settings,
-                "17": None,
+                "17": self.opt_safe_lab,
+                "18": self.opt_victim_protection,
+                "19": self.opt_defense,
+                "20": None,
             }
-            if choice == "17":
+            if choice == "20":
                 break
             handler = handlers.get(choice)
             if handler is None:

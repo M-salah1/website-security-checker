@@ -96,7 +96,7 @@ def investigate_website(url, scope=None, max_pages=20, timeout=15,
 
     duration = round(time.time() - t0, 1)
     return {
-        "tool": "CONAN FRAMEWORK v4.0",
+        "tool": "CONAN FRAMEWORK v5.0",
         "target": url, "kind": "website-investigation",
         "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - duration)),
         "finished_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),

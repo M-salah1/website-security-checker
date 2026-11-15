@@ -29,9 +29,11 @@ class TestI18n(unittest.TestCase):
                 self.assertEqual(keys, set(data), "key mismatch in %s" % lang)
 
     def test_translate(self):
-        self.assertEqual(translate("menu_17", "ar"), "خروج")
-        self.assertEqual(translate("menu_17", "fr"), "Quitter")
-        self.assertEqual(translate("menu_17", "en"), "Exit")
+        # Exit moved to menu_20 in v5.0 (17-19 are the new defender options).
+        self.assertEqual(translate("menu_20", "ar"), "خروج")
+        self.assertEqual(translate("menu_20", "fr"), "Quitter")
+        self.assertEqual(translate("menu_20", "en"), "Exit")
+        self.assertEqual(translate("menu_17", "ar"), "المختبر الآمن والتدريب الأخلاقي")
 
     def test_rtl_marker(self):
         i = I18n("ar")
