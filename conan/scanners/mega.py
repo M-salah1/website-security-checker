@@ -127,7 +127,7 @@ def mega_scan(url, scope=None, settings=None, timeout=15, progress=None):
                     timeout=timeout, progress=tick),
                 150, _core_fallback)
     scan["kind"] = "mega-scan"
-    scan["tool"] = "CONAN FRAMEWORK v5.9"
+    scan["tool"] = "CONAN FRAMEWORK v6.0"
     scan["deep_tests"] = list(DEEP_TESTS)
     scan["scope"] = {"kind": "authorized" if authorized else "passive",
                      "authorized": authorized}

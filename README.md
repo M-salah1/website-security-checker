@@ -1,4 +1,4 @@
-# CONAN FRAMEWORK v5.9 — ULTIMATE CYBER INVESTIGATION SYSTEM 🔍
+# CONAN FRAMEWORK v6.0 — ULTIMATE CYBER INVESTIGATION SYSTEM 🔍
 
 **CONAN DETECTIVE** — منصة تحقيق سيبراني معيارية متعددة اللغات.
 
@@ -220,6 +220,31 @@ external AI service with the user's own API key is a possible later
 step; the key would live only in the user's local `.env`. The Brain
 never executes an attack: it describes paths so the defender can
 close them.
+
+## Verification Mode — compare without ever displaying a secret (v6.0)
+
+The real scenario: a site owner gives the tester a value (a password,
+an API key, a cookie value, a username) plus authorization, and asks:
+"did your scan find a hole that leads to THIS?" — or the owner plants
+a FAKE value and asks: "is this real or fake?" The tester already HAS
+the value from the owner. What they need is the comparison.
+
+After an authorized scan, the dashboard offers **7. Verify**: type
+the value hidden (getpass). Conan re-fetches, in memory only, the
+public places the scan found (exposed files, discovered pages, public
+paths) and checks whether the exact value appears in any of them —
+and whether a session cookie value equals it. The answer is only
+YES/NO + the location. The value itself never appears in any output,
+report, log, case or file, and the local reference is wiped right
+after the check.
+
+Why the value is never displayed: a displayed secret is a leaked
+secret. It lands in terminal scrollback, screenshots, saved reports
+and history files — and that leak is exactly what would destroy the
+tester's credibility with the owner. The comparison is the job; the
+display is the risk. If the owner wants to see the value itself, they
+open the file Conan named (path + key name) — they own the secret,
+Conan only proves where it is exposed.
 
 ## Scope and authorization — read this first
 

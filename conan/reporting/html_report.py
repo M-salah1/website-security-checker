@@ -44,7 +44,7 @@ def build_html_report(scan):
     health = r.get("health") or {}
     phishing = r.get("phishing") or {}
     html = """<!DOCTYPE html><html lang="%s" dir="%s"><head><meta charset="utf-8">
-<title>CONAN FRAMEWORK v5.9 — %s</title><style>
+<title>CONAN FRAMEWORK v6.0 — %s</title><style>
 body{font-family:system-ui,Arial,sans-serif;max-width:960px;margin:20px auto;padding:0 16px;color:#111;background:#fff}
 h1{font-size:24px} h2{border-bottom:2px solid #f97316;padding-bottom:4px}
 .score{font-size:44px;color:%s}
@@ -52,7 +52,7 @@ table{border-collapse:collapse;width:100%%;margin:12px 0}
 td,th{border:1px solid #ccc;padding:6px 8px;text-align:left;font-size:13px;vertical-align:top}
 th{background:#111;color:#fff}
 footer{color:#666;font-size:13px;margin-top:24px}</style></head><body>
-<h1>🔍 CONAN FRAMEWORK v5.9 — Website Security Report</h1>
+<h1>🔍 CONAN FRAMEWORK v6.0 — Website Security Report</h1>
 <p>Target: <b>%s</b><br>Scanned: %s<br>Duration: %s s<br>
 Developer: Hafed Mehdi Salah Eddine — Algeria 🇩🇿 — GitHub: M-salah1</p>
 <p class="score">%d%% — %s</p>
@@ -74,7 +74,7 @@ Developer: Hafed Mehdi Salah Eddine — Algeria 🇩🇿 — GitHub: M-salah1</p
 <h2>13. Website availability</h2><p>%s — HTTP %s — %s ms</p>
 <h2>14. Recommendations</h2><ol>%s</ol>
 <h2>15. Final risk assessment</h2><p>Score %d%% (%s). %d confirmed and %d suspected findings. %s</p>
-<footer>CONAN FRAMEWORK v5.9 — passive + authorized-active audit only. No passwords or session values are stored in this report.</footer>
+<footer>CONAN FRAMEWORK v6.0 — passive + authorized-active audit only. No passwords or session values are stored in this report.</footer>
 </body></html>""" % (
         lang, direction, _esc(r["target"]), color,
         _esc(r["target"]), _esc(r["scan_timestamp"]), _esc(r["duration_s"]),

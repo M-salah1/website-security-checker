@@ -72,9 +72,9 @@ def build_animated_html_report(scan):
     dist = r.get("severity_distribution") or {}
     dist_txt = ", ".join("%s=%d" % (k, v) for k, v in dist.items() if v) or "—"
     html = """<!DOCTYPE html><html lang="%s" dir="%s"><head><meta charset="utf-8">
-<title>CONAN FRAMEWORK v5.9 — %s</title><style>%s</style></head><body>
+<title>CONAN FRAMEWORK v6.0 — %s</title><style>%s</style></head><body>
 <div class="radar"></div>
-<h1>🔍 CONAN FRAMEWORK v5.9 — Website Security Report</h1>
+<h1>🔍 CONAN FRAMEWORK v6.0 — Website Security Report</h1>
 <p>Target: <b>%s</b><br>Scanned: %s<br>Duration: %s s<br>
 Developer: Hafed Mehdi Salah Eddine — Algeria 🇩🇿 — GitHub: M-salah1</p>
 <svg class="ring" viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="45"/>
@@ -84,7 +84,7 @@ Developer: Hafed Mehdi Salah Eddine — Algeria 🇩🇿 — GitHub: M-salah1</p
 <div class="scanbox"><h2>Findings</h2>
 <table><tr><th>Severity</th><th>Name</th><th>Status</th><th>Confidence</th><th>URL</th><th>Evidence</th></tr>%s</table></div>
 <h2>Recommendations</h2><ol>%s</ol>
-<footer>CONAN FRAMEWORK v5.9 — Ethical Defender Edition. Passive + authorized-active audit only.
+<footer>CONAN FRAMEWORK v6.0 — Ethical Defender Edition. Passive + authorized-active audit only.
 Animated presentation of real results — no simulated findings. No passwords or session values are stored in this report.</footer>
 </body></html>""" % (
         lang, direction, _esc(r["target"]), css,
