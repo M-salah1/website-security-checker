@@ -1,4 +1,4 @@
-# Website Security Checker — المحقق كونان v2.2
+# Website Security Checker — المحقق كونان v2.3
 
 نظام فحص أمان قوي لمواقع الويب، بواجهة وحدة تحكم بأسلوب Metasploit،
 يعمل في Termux ببايثون فقط (بدون مكتبات إضافية).
@@ -40,7 +40,7 @@ python3 conan.py
    ____ ___  _   _    _    _   _
   / ___/ _ \| \ | |  / \  | \ | |
   ...
-   Conan Framework v2.2  •  8 passive checks  •  0 exploits  •  3 languages
+   Conan Framework v2.3  •  12 passive checks  •  0 exploits  •  3 languages
    Developer: Hafed Mehdi Salah Eddine  •  الجزائر 🇩🇿
 
 conan >
@@ -56,10 +56,23 @@ conan > run
 conan > about
 conan > developer
 conan > lang fr
+conan > history
+conan > export html
+conan > whois example.com
+conan > dns example.com
 conan > banner
 conan > clear
 conan > exit
 ```
+
+**الجديد في v2.3 — Website Security Intelligence:**
+- فحص DNSSEC عبر DNS-over-HTTPS، وتحليل شهادات TLS بعمق (التشفير و SANs)
+- تحليل HSTS و CSP بعمق (max-age و includeSubDomains و preload و wildcard)
+- كشف التقنيات سلبياً (WordPress و Laravel و Next.js و Cloudflare...)
+- تحليل robots.txt و sitemap.xml، والتحقق من محتوى security.txt (لا نتيجة مزيفة)
+- الكوكيز: الاسم والأعلام فقط، القيم مخفية دائماً
+- تقارير HTML احترافية + JSON، ومقارنة مع الفحص السابق (`conan-history.json`)
+- تقييم من A+ إلى F
 
 أو فحص مباشر بدون وحدة تحكم:
 
